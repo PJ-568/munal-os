@@ -1,19 +1,18 @@
-A simple toy OS developed in Rust.
+# Munal OS
 
-https://github.com/Askannz/rust-toy-os/assets/9202863/e3d5873c-92c6-49ef-9238-2cf9da4bbf94
+[Screencast_20250215_121948.webm](https://github.com/user-attachments/assets/8cbf8a42-c012-4610-8668-014093efc09d)
+
+
 
 Features:
-* VirtIO drivers for mouse and graphics
-* Can load PE executable (kinda, sort of, doesn't support relocation yet)
-* Very simple compositing allowing each app to draw to their own framebuffer
-
-### Build and run
-
-See `./run.sh`. Needs QEMU, Rust nightly, Python and a few Python packages (see requirements.txt).
-
-### Resources
-
-* https://os.phil-opp.com/
-* https://wiki.osdev.org
-* https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html
-* https://github.com/KDE/breeze for the wallpaper
+* Custom VirtIO drivers for input, network and full-res display
+* TCP stack
+* The whole OS is a single EFI binary
+* The security model does not implement userspace/kernelspace separation, nor does it put executables in their own virtual address space
+* Instead, apps are compiled to WASM and run inside a sandbox
+* Available apps:
+  * Chronometer
+  * 3D demo
+  * Python terminal (courtesy of rustpython)
+  * Rich text editor
+  * A semi-functional web browser
