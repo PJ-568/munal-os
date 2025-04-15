@@ -1,5 +1,9 @@
 # Munal OS ∴
 
+An experimental operating system written in Rust.
+
+Demo running in QEMU:
+
 [Screencast_20250215_121948.webm](https://github.com/user-attachments/assets/8cbf8a42-c012-4610-8668-014093efc09d)
 
 
