@@ -44,6 +44,8 @@ lazy_static! {
         Framebuffer::from_png(include_bytes!("../../icons/png/web.png"));
     pub static ref PYTHON_ICON: Framebuffer<OwnedPixels> =
         Framebuffer::from_png(include_bytes!("../../icons/png/python.png"));
+    pub static ref UI_ICON: Framebuffer<OwnedPixels> =
+        Framebuffer::from_png(include_bytes!("../../icons/png/ui.png"));
     pub static ref BLANK_ICON: Framebuffer<OwnedPixels> = Framebuffer::new_owned(32, 32);
 
     //
@@ -125,7 +127,7 @@ lazy_static! {
                 w: 800,
                 h: 600
             },
-            icon: &WEB_ICON,
+            icon: &UI_ICON,
         },
     ];
 }
