@@ -140,8 +140,8 @@ fn get_rich_text_prelude(
     let mut rich_text = RichText::new();
 
     for res in history.as_ref().iter() {
-        rich_text.add_part(">>> ", stylesheet.colors.yellow, font);
-        rich_text.add_part(&res.cmd, stylesheet.colors.text, font);
+        rich_text.add_part(">>> ", stylesheet.colors.yellow, font, None);
+        rich_text.add_part(&res.cmd, stylesheet.colors.text, font, None);
 
         let color = match &res.pyres {
             python::EvalResult::Failure(_) => Color::rgb(200, 150, 25),
@@ -153,11 +153,11 @@ fn get_rich_text_prelude(
             python::EvalResult::Success(repr) => format!("\n{}", repr),
         };
 
-        rich_text.add_part(&text, color, font);
-        rich_text.add_part("\n", stylesheet.colors.text, font)
+        rich_text.add_part(&text, color, font, None);
+        rich_text.add_part("\n", stylesheet.colors.text, font, None)
     }
 
-    rich_text.add_part(">>> ", stylesheet.colors.text, font);
+    rich_text.add_part(">>> ", stylesheet.colors.text, font, None);
 
     TrackedContent::new_with_id(rich_text, history.get_id())
 }

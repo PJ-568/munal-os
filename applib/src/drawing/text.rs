@@ -1,10 +1,12 @@
 use crate::{blend_colors, decode_png, Color, FbView, FbViewMut, Rect};
+use alloc::borrow::ToOwned;
 use alloc::collections::btree_map::BTreeMap;
 use alloc::string::String;
 use alloc::vec::Vec;
 use lazy_static::lazy_static;
 
 use super::primitives::draw_rect;
+use crate::hash::compute_hash;
 
 struct FontSpec {
     name: &'static str,
@@ -205,25 +207,31 @@ pub fn draw_char<F: FbViewMut>(
 }
 
 #[derive(Clone)]
-pub struct RichText(Vec<RichChar>);
+pub struct RichText { chars: Vec<RichChar>, link_store: LinkStore }
+
+type LinkStore = BTreeMap<LinkId, (usize, String)>;
 
 impl alloc::fmt::Debug for RichText {
     fn fmt(&self, f: &mut alloc::fmt::Formatter<'_>) -> alloc::fmt::Result {
-        write!(f, "RichText [{}]", self.as_string())
+
+        let links: Vec<String> = self.link_store.values().map(|(_, s)| s.clone()).collect();
+        let joined = links.join(" / ");
+
+        write!(f, "RichText [{}] links: {}", self.as_string(), joined)
     }
 }
 
 impl RichText {
     pub fn new() -> Self {
-        RichText(Vec::new())
+        RichText { chars: Vec::new(), link_store: BTreeMap::new() }
     }
 
     pub fn is_empty(&self) -> bool {
-        self.0.is_empty()
+        self.chars.is_empty()
     }
 
     pub fn clear(&mut self) {
-        self.0.clear();
+        self.chars.clear();
     }
 
     pub fn add_part(
@@ -231,11 +239,23 @@ impl RichText {
         s: &str,
         color: Color,
         font: &'static Font,
+        link: Option<&str>
     ) {
-        self.0.extend(s.chars().map(|c| RichChar {
+
+        // Adding link to store
+        let link_id = link.map(|link| {
+            let link_id = LinkId(compute_hash(link));
+            self.link_store.entry(link_id)
+                .and_modify(|(count, _)| *count += s.len())
+                .or_insert((s.len(), link.to_owned()));
+            link_id
+        });
+
+        self.chars.extend(s.chars().map(|c| RichChar {
             c,
             color,
             font,
+            link_id,
         }));
     }
 
@@ -246,45 +266,67 @@ impl RichText {
         color: Color,
         font: &'static Font,
     ) {
-        self.0.insert(pos, RichChar {
+        self.chars.insert(pos, RichChar {
             c,
             color,
             font,
+            link_id: None,
         });
     }
 
-    pub fn remove(&mut self, pos: usize,) {
-        self.0.remove(pos);
+    pub fn remove(&mut self, pos: usize) {
+
+        // Decrementing counter in link store
+        if let Some(link_id) = self.chars[pos].link_id {
+            let (counter, _) = self.link_store.get_mut(&link_id).unwrap();
+            *counter -= 1;
+            if *counter == 0 { // If no more references to that link, delete
+                self.link_store.remove(&link_id);
+            }
+        }
+
+        self.chars.remove(pos);
     }
 
-    pub fn from_str(s: &str, color: Color, font: &'static Font) -> Self {
+    pub fn from_str(s: &str, color: Color, font: &'static Font, link: Option<&str>) -> Self {
         let mut t = Self::new();
-        t.add_part(s, color, font);
+        t.add_part(s, color, font, link);
         t
     }
 
     pub fn as_string(&self) -> String {
         let mut s = String::new();
-        for rich_char in self.0.iter() {
+        for rich_char in self.chars.iter() {
             s.push(rich_char.c);
         }
         s
     }
 
     pub fn len(&self) -> usize {
-        self.0.len()
+        self.chars.len()
     }
 
     pub fn concat(&mut self, mut other: Self) {
-        self.0.append(&mut other.0);
+
+        for (link_id, (other_count, other_link)) in other.link_store.into_iter() {
+            self.link_store.entry(link_id)
+                .and_modify(|(count, _)| *count += other_count)
+                .or_insert((other_count, other_link));
+        }
+
+        self.chars.append(&mut other.chars);
     }
 }
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+struct LinkId(u64);
 
 #[derive(Clone)]
 pub struct RichChar {
     pub c: char,
     pub color: Color,
     pub font: &'static Font,
+    link_id: Option<LinkId>,
 }
 
 impl RichChar {
@@ -312,6 +354,7 @@ pub struct FormattedRichText {
     pub w: u32,
     pub h: u32,
     justif: TextJustification,
+    link_store: LinkStore,
 }
 
 impl FormattedRichText {
@@ -324,7 +367,7 @@ impl FormattedRichText {
         let last_line = self.lines.last().unwrap();
 
         // OK because a single line cannot be empty
-        let last_char = last_line .chars.last().unwrap().c;
+        let last_char = last_line.chars.last().unwrap().c;
 
         let mut i = 0;
         let search_res = self.lines.iter()
@@ -370,6 +413,107 @@ impl FormattedRichText {
 
         (x as i64, y as i64)
     }
+
+    pub fn xy_to_index(&self, xy: (i64, i64)) -> Option<usize> {
+
+        let (xp, yp) = xy;
+        if xp < 0 || xp >= self.w as i64 || yp < 0 || yp >= self.h as i64 {
+            return None;
+        }
+
+        let mut index = 0;
+        let mut y = 0;
+        for line in self.lines.iter() {
+
+            let line_rect = Rect { 
+                x0: line.x_offset as i64, y0: y,
+                w: line.w, h: line.h
+            };
+
+            if line_rect.check_contains_point(xp, yp) {
+
+                let mut x = line_rect.x0;
+
+                let index = line.chars.iter().enumerate()
+                    .find_map(|(i, c)| {
+                        let char_w = c.font.char_w as i64;
+                        if xp <= x + char_w {
+                            return Some(index + i);
+                        }
+                        x += char_w;
+                        None
+                    })
+                    .expect("Could not find rich line index (should not happen)");
+
+                return Some(index);
+            }
+
+            y += line.h as i64;
+            index += line.chars.len();
+        }
+
+        None
+    }
+
+    pub fn has_link(&self) -> bool {
+        !self.link_store.is_empty()
+    }
+
+    pub fn get_link(&self, index: usize) -> Option<(&str, Vec<(i64, i64, i64)>)> {
+
+        const UNDERLINE_GAP: u32 = 2;
+
+        let rc = self.get_char(index);
+        let link_id = rc.link_id?;
+
+        let link_str = self.link_store
+            .get(&link_id)
+            .map(|(_, link)| link.as_str())?;
+
+        let mut underlines = Vec::new();
+
+        let mut y = 0;
+        for line in self.lines.iter() {
+
+            let mut underline_opt = None;
+
+            let mut x = line.x_offset as i64;
+            for rc in line.chars.iter() {
+                if rc.link_id == Some(link_id) {
+                    
+                    let (x0, x1) = underline_opt.get_or_insert((x, x));
+                    *x0 = i64::min(*x0, x);
+                    *x1 = i64::max(*x1, x + rc.font.char_w as i64);
+
+                }
+                x += rc.font.char_w as i64;
+            }
+
+            if let Some((x0, x1)) = underline_opt {
+
+                let baseline_max = line.chars.iter().map(|rc| rc.font.base_y).max().unwrap();
+
+                let y_ul = y + UNDERLINE_GAP as i64 + baseline_max as i64;
+                underlines.push((y_ul, x0, x1));
+            }
+
+            y += line.h as i64;
+        }
+
+        Some((link_str, underlines))
+    }
+
+    pub fn get_char(&self, index: usize) -> &RichChar {
+        let mut i = 0;
+        for line in self.lines.iter() {
+            if index >= i {
+                return &line.chars[index - i]
+            }
+            i += line.chars.len();
+        }
+
+        panic!("Index out of bounds for rich line")
+    }
 }
 
 impl alloc::fmt::Debug for FormattedRichText {
@@ -383,7 +527,10 @@ impl alloc::fmt::Debug for FormattedRichText {
             s.push_str(" / ");
         }
 
-        write!(f, "FormattedRichText [{}]", s)
+        let links: Vec<String> = self.link_store.values().map(|(_, s)| s.clone()).collect();
+        let joined = links.join(" / ");
+
+        write!(f, "FormattedRichText [{}] links: {}", s, joined)
     }
 }
 
@@ -397,7 +544,7 @@ impl FormattedRichLine {
 
 pub fn format_rich_lines(text: &RichText, max_w: u32, justif: TextJustification) -> FormattedRichText {
 
-    let RichText(chars) = text;
+    let RichText { chars, link_store, .. } = text;
 
     let lines: Vec<FormattedRichLine> = chars
         .split_inclusive(|rc| rc.c == '\n')
@@ -463,7 +610,8 @@ pub fn format_rich_lines(text: &RichText, max_w: u32, justif: TextJustification)
         lines,
         w: text_w,
         h: text_h,
-        justif
+        justif,
+        link_store: link_store.clone()
     }
 
 }

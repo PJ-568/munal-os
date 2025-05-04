@@ -179,7 +179,7 @@ pub trait FormattableText {
 
 impl FormattableText for TrackedContent<String> {
     fn to_rich_text(&self, color: Color, font: &'static Font) -> TrackedContent<RichText> {
-        let rich_text = RichText::from_str(self.as_ref(), color, font);
+        let rich_text = RichText::from_str(self.as_ref(), color, font, None);
         let new_id = ContentId::from_hash(&(
             self.get_id(),
             color,

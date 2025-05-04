@@ -66,12 +66,12 @@ pub fn init() -> () {
     let font = get_font(selected_size);    
 
     let textbox_text = {
-        let text = RichText::from_str("pouet\ntralala", color, font);
+        let text = RichText::from_str("pouet\ntralala", color, font, None);
         TrackedContent::new(text, &mut uuid_provider)
     };
 
     let textbox_prelude = {
-        let text = RichText::from_str("Write text here >>>", color, font);
+        let text = RichText::from_str("Write text here >>>", color, font, None);
         TrackedContent::new(text, &mut uuid_provider)
     };
 

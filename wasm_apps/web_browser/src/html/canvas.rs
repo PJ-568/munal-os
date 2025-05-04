@@ -15,6 +15,7 @@ pub fn html_canvas<'a, F: FbViewMut>(
     offsets: &mut (i64, i64),
     dragging: &mut (bool, bool),
 ) -> Option<&'a str> {
+
     uitk_context.dynamic_canvas(dst_rect, &HtmlRenderer { render_list }, offsets, dragging);
 
     let UiContext {
@@ -24,6 +25,41 @@ pub fn html_canvas<'a, F: FbViewMut>(
     let (ox, oy) = *offsets;
     let p = &input_state.pointer;
     let vr = dst_rect;
+
+    let (x_p_canvas, y_p_canvas) = (
+        p.x - vr.x0 + ox,
+        p.y - vr.y0 + oy
+    );
+
+    let hovered_link = render_list.as_ref().iter().find_map(|render_item| {
+        if let RenderItem::Text { formatted, origin } = render_item {
+            if formatted.has_link() {
+                let (x0, y0) = *origin;
+                let text_rect = Rect { x0, y0, w: formatted.w, h: formatted.h };
+                let (x_text, y_text) = (
+                    x_p_canvas - text_rect.x0,
+                    y_p_canvas - text_rect.y0,
+                );
+    
+                let index = formatted.xy_to_index((x_text, y_text))?;
+    
+                let (link, underlines) = formatted.get_link(index)?;
+
+                for (y_ul, x0_ul, x1_ul) in underlines.iter().cloned() {
+                    let (y_ul_fb, x0_ul_fb) = (
+                        y_ul + text_rect.y0 + vr.y0 - oy,
+                        x0_ul + text_rect.x0 + vr.x0 - ox,
+                    );
+                    let line_w = (x1_ul - x0_ul + 1) as u32;
+                    fb.fill_line(x0_ul_fb, line_w, y_ul_fb, Color::BLUE, false);
+                }
+
+                return Some(link)
+            }
+        }
+
+        None
+    });
 
     // match get_hovered_link(p.x - vr.x0 + ox, p.y - vr.y0 + oy, layout.as_ref()) {
     //     Some(link_data) => {
@@ -39,7 +75,7 @@ pub fn html_canvas<'a, F: FbViewMut>(
     //     None => None,
     // }
 
-    None
+    hovered_link
 }
 
 struct LinkData<'a> {

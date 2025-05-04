@@ -186,7 +186,7 @@ fn get_inline_block_contents(html_tree: &Tree<HtmlNode>, html_id: NodeId) -> Ric
     let mut inline_text = RichText::new();
 
     #[derive(Clone)]
-    struct TextContext { color: Color, font: &'static Font }
+    struct TextContext<'a> { color: Color, font: &'static Font, link: Option<&'a str> }
 
     fn get_contents(html_tree: &Tree<HtmlNode>, html_id: NodeId, context: &TextContext, inline_text: &mut RichText) {
 
@@ -195,13 +195,20 @@ fn get_inline_block_contents(html_tree: &Tree<HtmlNode>, html_id: NodeId) -> Ric
         match &html_child_node.data {
             HtmlNode::Tag { name, attrs, .. } => match get_element_type(name) {
                 ElementType::Inline => {
+
                     let mut context = context.clone();
+
                     context.color = {
                         if name == "a" { Color::BLUE }
                         else if let Some(color) = attrs.get("color").map(|s| parse_hexcolor(s)) { color }
                         else { context.color }
                     };
-    
+
+                    context.link = {
+                        if name == "a" { attrs.get("href").map(|s| s.as_str()) }
+                        else { None }
+                    };
+
                     for child_id in html_tree.get_node(html_id).unwrap().children.iter() {
                         get_contents(html_tree, *child_id, &context, inline_text);
                     }
@@ -210,12 +217,12 @@ fn get_inline_block_contents(html_tree: &Tree<HtmlNode>, html_id: NodeId) -> Ric
             },
 
             HtmlNode::Text { text } => {
-                inline_text.concat(RichText::from_str(text, context.color, context.font));
+                inline_text.concat(RichText::from_str(text, context.color, context.font, context.link));
             }
         }
     }
 
-    let context = TextContext { color: Color::BLACK, font: DEFAULT_FONT_FAMILY.get_default() };
+    let context = TextContext { color: Color::BLACK, font: DEFAULT_FONT_FAMILY.get_default(), link: None };
     get_contents(html_tree, html_id, &context, &mut inline_text);
 
     inline_text
