@@ -1,4 +1,4 @@
-use applib::{drawing::text::{RichText, DEFAULT_FONT_FAMILY, Font}, Color, FbData};
+use applib::{drawing::text::{RichText, DEFAULT_FONT_FAMILY, Font}, Color};
 use super::tree::{Tree, NodeId};
 use super::parsing::HtmlNode;
 

@@ -11,7 +11,7 @@ use alloc::format;
 use anyhow::Context;
 use html::render_list::RenderItem;
 use lazy_static::lazy_static;
-use applib::{Color, FbView, FbViewMut, Rect, StyleSheet};
+use applib::{Rect, StyleSheet};
 use core::cell::OnceCell;
 use guestlib::{PixelData, WasmLogger};
 
@@ -28,11 +28,9 @@ mod tls;
 
 use html::canvas::html_canvas;
 use html::{
-    layout::{compute_layout, LayoutNode},
     parsing::parse_html,
     block_layout::{compute_block_layout},
     render_list::compute_render_list,
-    render::render_html2,
 };
 use socket::Socket;
 use tls::TlsClient;
@@ -84,7 +82,6 @@ enum RequestState {
     Home,
     Idle {
         http_target: Option<HttpTarget>,
-        layout: TrackedContent<LayoutNode>,
         render_list: TrackedContent<Vec<RenderItem>>,
     },
     Dns {
@@ -397,8 +394,8 @@ fn update_request_state(
                     icon: &MF_WEBSITE_ICON
                 },
                 Favorite {
-                    link: "https://news.ycombinator.com/item?id=43535688",
-                    //link: "https://news.ycombinator.com",
+                    //link: "https://news.ycombinator.com/item?id=43535688",
+                    link: "https://news.ycombinator.com",
                     icon: &HN_ICON
                 },
                 Favorite {
@@ -459,7 +456,6 @@ fn update_request_state(
 
         RequestState::Idle {
             http_target,
-            layout,
             render_list,
         } => {
             let mut framebuffer = state.pixel_data.get_framebuffer();
@@ -651,13 +647,9 @@ fn update_request_state(
             //     log::debug!("{:?}", render_item);
             // }
 
-            
-            let layout = compute_layout(&html_tree, page_max_w)?;
-
             //log::debug!("Layout: {:?}", layout.rect);
             state.request_state = RequestState::Idle {
                 http_target: http_target.clone(),
-                layout: TrackedContent::new(layout, &mut state.uuid_provider),
                 render_list: TrackedContent::new(render_list, &mut state.uuid_provider),
             };
         }

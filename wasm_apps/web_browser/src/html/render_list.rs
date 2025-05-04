@@ -1,5 +1,5 @@
 use applib::drawing::text::{format_rich_lines, FormattedRichText, TextJustification};
-use applib::{drawing::text::RichText, Color, Rect};
+use applib::{Color, Rect};
 use super::block_layout::{Block, Orientation};
 use super::tree::{Tree, NodeId};
 
