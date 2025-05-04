@@ -1,5 +1,5 @@
 use crate::geometry::{Point2D, Quad2D, Triangle2D, Vec2D};
-use crate::{blend_colors, Color, FbViewMut, Rect};
+use crate::{Color, FbViewMut, Rect};
 use core::f32::consts::PI;
 use num::Float;
 

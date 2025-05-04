@@ -1,12 +1,11 @@
 use alloc::format;
 use applib::{FbView, OwnedPixels, Framebuffer};
 use applib::drawing::primitives::draw_rect;
-use applib::drawing::text::{draw_str, draw_line_in_rect, TextJustification};
+use applib::drawing::text::{draw_line_in_rect, TextJustification};
 use applib::uitk::{BarValue, HorizBarConfig, UiContext};
 use applib::{Color, Rect};
 use applib::{uitk::{self}, FbViewMut};
-use chrono::{DateTime, Datelike, NaiveDate, TimeZone, Timelike, Utc, Month};
-use num_traits::float::FloatCore;
+use chrono::{DateTime, Datelike, Timelike, Utc, Month};
 
 use crate::resources;
 use crate::stats::SystemStats;

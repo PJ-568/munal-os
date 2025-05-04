@@ -1,9 +1,7 @@
-use core::alloc::{GlobalAlloc, Layout};
-use core::cell::{OnceCell, UnsafeCell};
+use core::cell::OnceCell;
 use uefi::table::boot::{MemoryMap, MemoryType};
 use x86_64::structures::paging::{mapper::TranslateResult, OffsetPageTable, PageTable, Translate};
 use x86_64::{PhysAddr, VirtAddr};
-use core::sync::atomic::{AtomicUsize, Ordering::Relaxed};
 
 use super::allocator::{SimpleAllocator};
 

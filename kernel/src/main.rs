@@ -4,7 +4,6 @@
 #![feature(abi_x86_interrupt)]
 
 use alloc::vec::Vec;
-use alloc::format;
 use core::panic::PanicInfo;
 use num_traits::Float;
 use rand::rngs::SmallRng;
@@ -13,10 +12,9 @@ use uefi::prelude::{entry, Boot, Handle, Status, SystemTable};
 use uefi::table::boot::MemoryType;
 
 use applib::drawing::primitives::draw_rect;
-use applib::drawing::text::{draw_str};
 use applib::input::{InputEvent, InputState};
-use applib::uitk::{self, UiContext};
-use applib::{BorrowedMutPixels, Color, FbView, FbViewMut, Framebuffer, OwnedPixels, Rect};
+use applib::uitk::{self};
+use applib::{BorrowedMutPixels, Color, FbViewMut, Framebuffer, OwnedPixels, Rect};
 
 extern crate alloc;
 

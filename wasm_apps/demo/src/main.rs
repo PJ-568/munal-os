@@ -1,9 +1,8 @@
 extern crate alloc;
 
-use alloc::collections::BTreeMap;
 use applib::drawing::primitives::draw_rect;
-use applib::drawing::text::{draw_str, Font, RichText, TextJustification, DEFAULT_FONT_FAMILY};
-use applib::{Color, FbViewMut, Framebuffer, OwnedPixels};
+use applib::drawing::text::{Font, RichText, TextJustification, DEFAULT_FONT_FAMILY};
+use applib::Color;
 use core::cell::OnceCell;
 use guestlib::{PixelData, WasmLogger};
 use applib::Rect;

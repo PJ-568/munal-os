@@ -1,7 +1,6 @@
 use applib::input::PointerState;
-use applib::uitk::{ContentId, TileRenderer, UiContext, UiStore, UuidProvider};
-use applib::{Color, FbViewMut, Framebuffer, OwnedPixels, Rect};
-use applib::content::TrackedContent;
+use applib::uitk::{ContentId, TileRenderer, UiStore, UuidProvider};
+use applib::{Color, FbViewMut, Rect};
 use core::cell::OnceCell;
 use guestlib::PixelData;
 use guestlib::WasmLogger;

@@ -1,17 +1,13 @@
-use core::hash::Hash;
-use core::ptr::addr_of;
 
 use alloc::string::String;
 use alloc::vec::Vec;
 
 use crate::content::TrackedContent;
-use crate::drawing::primitives::draw_rect;
-use crate::drawing::text::{draw_rich_slice, draw_str, Font, FormattedRichText, RichText};
+use crate::drawing::text::{draw_rich_slice, FormattedRichText};
 use crate::input::{InputEvent, InputState};
 use crate::input::{Keycode, CHARMAP};
-use crate::uitk::{ContentId, UiContext, CachedTile};
 use crate::Rect;
-use crate::{Color, FbViewMut, FbView};
+use crate::{FbViewMut, FbView};
 
 
 use super::UuidProvider;

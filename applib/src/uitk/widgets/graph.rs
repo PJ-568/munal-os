@@ -1,9 +1,6 @@
 use crate::drawing::primitives::draw_rect;
-use crate::drawing::text::{draw_str, Font};
 use crate::uitk::{UiContext};
-use crate::{Color, FbView, FbViewMut, Framebuffer, OwnedPixels, Rect};
-use alloc::borrow::ToOwned;
-use alloc::string::String;
+use crate::{Color, FbViewMut, Rect};
 use num::traits::float::FloatCore;
 
 impl<'a, F: FbViewMut> UiContext<'a, F> {

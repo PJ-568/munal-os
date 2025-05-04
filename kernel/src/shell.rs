@@ -5,7 +5,7 @@ use applib::drawing::primitives::{draw_arc, ArcMode};
 use applib::drawing::text::{draw_str, Font, compute_text_bbox};
 use applib::geometry::{Point2D, Vec2D};
 use applib::uitk::{self};
-use applib::{Color, FbView, FbViewMut, Framebuffer, OwnedPixels, StyleSheet};
+use applib::{Color, FbView, FbViewMut, Framebuffer, OwnedPixels};
 use core::f32;
 use core::f32::consts::PI;
 use num_traits::Float;

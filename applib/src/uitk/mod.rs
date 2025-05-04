@@ -17,7 +17,7 @@ pub use text::{render_rich_text, string_input};
 pub use crate::content::{ContentId, UuidProvider};
 use crate::{InputState, StyleSheet};
 use crate::{FbViewMut, Framebuffer, OwnedPixels};
-use crate::drawing::text::{Font, FontFamily, DEFAULT_FONT_FAMILY};
+use crate::drawing::text::{FontFamily, DEFAULT_FONT_FAMILY};
 
 
 const TILE_CACHE_MAX_SIZE: usize = 10_000_000; // in bytes

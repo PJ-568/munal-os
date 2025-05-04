@@ -4,15 +4,14 @@ extern crate alloc;
 
 use alloc::string::String;
 use alloc::vec::Vec;
-use alloc::{borrow::ToOwned, format};
-use applib::content::{ContentId, TrackedContent};
+use alloc::format;
+use applib::content::TrackedContent;
 use applib::drawing::text::{
-    draw_rich_slice, format_rich_lines, FontFamily, FormattedRichText, RichText, DEFAULT_FONT_FAMILY
+    FontFamily, RichText, DEFAULT_FONT_FAMILY
 };
-use applib::input::InputEvent;
-use applib::input::{InputState, Keycode};
-use applib::uitk::{self, UiStore, UuidProvider, TextBoxState, EditableRichText};
-use applib::{Color, FbViewMut, Rect, StyleSheet};
+use applib::input::Keycode;
+use applib::uitk::{self, UiStore, TextBoxState, EditableRichText};
+use applib::{Color, Rect, StyleSheet};
 use core::cell::OnceCell;
 use guestlib::PixelData;
 use guestlib::WasmLogger;

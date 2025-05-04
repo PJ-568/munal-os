@@ -1,7 +1,7 @@
 use crate::drawing::primitives::draw_rect;
-use crate::drawing::text::{draw_str, Font};
+use crate::drawing::text::draw_str;
 use crate::uitk::UiContext;
-use crate::{Color, FbViewMut, Rect};
+use crate::{FbViewMut, Rect};
 
 impl<'a, F: FbViewMut> UiContext<'a, F> {
     pub fn progress_bar(&mut self, config: &ProgressBarConfig, progress: u64, text: &str) {

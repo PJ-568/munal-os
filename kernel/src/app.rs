@@ -1,21 +1,20 @@
 use alloc::borrow::ToOwned;
-use alloc::collections::btree_map::BTreeMap;
 use alloc::format;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use applib::input::PointerState;
-use applib::{BorrowedPixels, FbView, StyleSheet};
+use applib::{FbView, StyleSheet};
 
 use crate::shell::{pie_menu, PieDrawCalls, PieMenuEntry};
 use crate::stats::SystemStats;
 use applib::drawing::primitives::draw_rect;
-use applib::drawing::text::{draw_line_in_rect, draw_rich_slice, draw_str, format_rich_lines, Font, RichText, TextJustification};
+use applib::drawing::text::{draw_line_in_rect, draw_str, Font, TextJustification};
 use applib::geometry::{Point2D, Vec2D};
-use applib::uitk::{self, GraphSeries, UiContext, TextBoxState};
+use applib::uitk::{self, GraphSeries, TextBoxState};
 use applib::{input::InputState, Color, FbViewMut, Framebuffer, OwnedPixels, Rect};
-use applib::content::{TrackedContent, UuidProvider};
+use applib::content::TrackedContent;
 
-use crate::{app, resources, TOPBAR_H};
+use crate::{resources, TOPBAR_H};
 use crate::system::System;
 use crate::wasm::{WasmApp, WasmEngine};
 

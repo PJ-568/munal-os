@@ -1,10 +1,10 @@
 use alloc::collections::BTreeMap;
 use alloc::string::ToString;
-use alloc::{format, vec};
+use alloc::vec;
 use alloc::{borrow::ToOwned, string::String};
 use applib::content::TrackedContent;
 use applib::geometry::Point2D;
-use applib::{BorrowedPixels, Color};
+use applib::BorrowedPixels;
 use applib::content::UuidProvider;
 use core::fmt::Write;
 use core::mem::size_of;
@@ -19,7 +19,6 @@ use wasmi::{
 
 use applib::{input::InputState, FbViewMut, Framebuffer, Rect};
 
-use crate::serial_println;
 use crate::stats::AppDataPoint;
 use crate::system::System;
 

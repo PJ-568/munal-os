@@ -121,12 +121,14 @@ enum ElementType {
 
 fn get_element_type(tag_name: &str) -> ElementType {
 
+    #[allow(non_snake_case)]
     let SKIPPED = [
         "head",
         "script",
         "font",
     ];
 
+    #[allow(non_snake_case)]
     let VERTICAL_BLOCK = [
         "html",
         "body",
@@ -138,10 +140,12 @@ fn get_element_type(tag_name: &str) -> ElementType {
         "td",
     ];
 
+    #[allow(non_snake_case)]
     let HORIZONTAL_BLOCK = [
         "tr",
     ];
 
+    #[allow(non_snake_case)]
     let INLINE = [
         "span",
         "h1",
@@ -154,6 +158,7 @@ fn get_element_type(tag_name: &str) -> ElementType {
         "u",
     ];
 
+    #[allow(non_snake_case)]
     let IMAGE = [
         "img"
     ];

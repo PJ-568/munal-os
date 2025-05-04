@@ -1,6 +1,5 @@
 pub mod keymap;
 
-use crate::Rect;
 use crate::geometry::Point2D;
 pub use keymap::{Keycode, CHARMAP};
 

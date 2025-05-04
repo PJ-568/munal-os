@@ -1,6 +1,5 @@
 use alloc::borrow::ToOwned;
 use alloc::boxed::Box;
-use core::borrow::BorrowMut;
 use core::convert::TryInto;
 use core::hash::Hasher;
 use core::ptr::{read_volatile, write_volatile};

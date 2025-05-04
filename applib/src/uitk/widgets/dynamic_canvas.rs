@@ -2,12 +2,12 @@ use alloc::vec::Vec;
 
 use crate::drawing::primitives::draw_rect;
 use crate::input::InputEvent;
-use crate::content::{ContentId, TrackedContent};
+use crate::content::ContentId;
 use crate::Color;
 use crate::Rect;
-use crate::{BorrowedMutPixels, FbViewMut, FbView, Framebuffer};
+use crate::{FbViewMut, FbView, Framebuffer};
 
-use crate::uitk::{CachedTile, TileCache, UiContext};
+use crate::uitk::{TileCache, UiContext};
 
 const DISABLE_CACHING: bool = false;
 const SCROLL_SPEED: u32 = 10;

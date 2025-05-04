@@ -1,6 +1,5 @@
 use crate::app::AppDescriptor;
-use alloc::vec::Vec;
-use applib::{decode_png, Framebuffer, OwnedPixels, Rect, Color};
+use applib::{Framebuffer, OwnedPixels, Rect, Color};
 use applib::{StyleSheet, StyleSheetColors};
 use lazy_static::lazy_static;
 
