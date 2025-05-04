@@ -13,8 +13,13 @@ pub fn parse_html(html: &str) -> anyhow::Result<Tree<HtmlNode>> {
             ChunkType::Text => {
                 if tree.len() > 0 {
                     let text = html_escape::decode_html_entities(chunk.s).to_string();
-                    let data = HtmlNode::Text { text };
-                    tree.add_node(parent_id, data)?;
+
+                    let text = deduplicate_spaces(&text);
+
+                    if text != " " {
+                        let data = HtmlNode::Text { text };
+                        tree.add_node(parent_id, data)?;
+                    }
                 }
             }
 
@@ -80,6 +85,26 @@ pub fn parse_html(html: &str) -> anyhow::Result<Tree<HtmlNode>> {
     }
 
     Ok(tree)
+}
+
+fn deduplicate_spaces(s: &str) -> String {
+
+    let mut new_s = String::with_capacity(s.len());
+
+    let mut prev_was_space = false;
+    for c in s.chars() {
+        if c == ' ' {
+            if !prev_was_space {
+                new_s.push(' ');
+                prev_was_space = true;
+            }
+        } else {
+            new_s.push(c);
+            prev_was_space = false;
+        }
+    }
+
+    new_s
 }
 
 fn check_is_void_element(tag_name: &str) -> bool {
@@ -238,7 +263,7 @@ fn get_chunks<'a>(html: &'a str) -> impl Iterator<Item = Chunk<'a>> {
                     in_attr: !in_attr,
                 },
 
-                (_, State::Idle) if c.is_whitespace() => State::Idle,
+                (_, State::Idle) if c.is_whitespace() && c != ' ' => State::Idle,
 
                 (_, State::Idle) => State::InText { i1: i },
                 (_, State::InTag { i1, in_attr }) => State::InTag { i1, in_attr },
