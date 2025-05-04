@@ -506,7 +506,7 @@ impl FormattedRichText {
     pub fn get_char(&self, index: usize) -> &RichChar {
         let mut i = 0;
         for line in self.lines.iter() {
-            if index >= i {
+            if i <= index && index < i + line.chars.len() {
                 return &line.chars[index - i]
             }
             i += line.chars.len();
