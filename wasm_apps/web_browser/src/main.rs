@@ -11,14 +11,14 @@ use alloc::format;
 use anyhow::Context;
 use html::render_list::RenderItem;
 use lazy_static::lazy_static;
-use applib::{Rect, StyleSheet};
+use applib::{FbViewMut, Rect, StyleSheet};
 use core::cell::OnceCell;
 use guestlib::{PixelData, WasmLogger};
 
 use applib::content::TrackedContent;
 use applib::input::Keycode;
 use applib::input::{InputEvent, InputState};
-use applib::uitk::{self, ButtonConfig, UuidProvider, TextBoxState};
+use applib::uitk::{self, IconStore, ButtonConfig, UuidProvider, TextBoxState};
 use applib::{Framebuffer, OwnedPixels};
 
 mod dns;
@@ -45,6 +45,12 @@ lazy_static! {
         Framebuffer::from_png(include_bytes!("../icons/websites/mfwebsite.png"));
     pub static ref EX_WEBSITE_ICON: Framebuffer<OwnedPixels> = 
         Framebuffer::from_png(include_bytes!("../icons/websites/example.png"));
+    pub static ref ARROW_RIGHT_ICON: Framebuffer<OwnedPixels> = 
+        Framebuffer::from_png(include_bytes!("../icons/arrow_right.png"));
+    pub static ref RELOAD_ICON: Framebuffer<OwnedPixels> = 
+        Framebuffer::from_png(include_bytes!("../icons/reload.png"));
+    pub static ref HOME_ICON: Framebuffer<OwnedPixels> = 
+        Framebuffer::from_png(include_bytes!("../icons/home.png"));
 }
 
 struct AppState {
@@ -65,11 +71,18 @@ struct AppState {
 }
 
 struct UiLayout {
+    home_button_rect: Rect,
+    reload_button_rect: Rect,
     url_bar_rect: Rect,
     go_button_rect: Rect,
-    reload_button_rect: Rect,
     progress_bar_rect: Rect,
     canvas_rect: Rect,
+}
+
+struct ButtonsState {
+    home: bool,
+    reload: bool,
+    go: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -221,17 +234,23 @@ pub fn step() {
 
     let ui_layout = compute_ui_layout(&win_rect);
 
-    let is_go_button_fired = uitk_context.button(&uitk::ButtonConfig {
-        rect: ui_layout.go_button_rect.clone(),
-        text: "GO".into(),
-        ..Default::default()
-    });
-
-    let is_reload_button_fired = uitk_context.button(&uitk::ButtonConfig {
-        rect: ui_layout.reload_button_rect.clone(),
-        text: "Reload".into(),
-        ..Default::default()
-    });
+    let buttons_state = ButtonsState {
+        home: uitk_context.button(&uitk::ButtonConfig {
+            rect: ui_layout.home_button_rect.clone(),
+            icon: Some(&HOME_ICON),
+            ..Default::default()
+        }),
+        go: uitk_context.button(&uitk::ButtonConfig {
+            rect: ui_layout.go_button_rect.clone(),
+            icon: Some(&ARROW_RIGHT_ICON),
+            ..Default::default()
+        }),
+        reload: uitk_context.button(&uitk::ButtonConfig {
+            rect: ui_layout.reload_button_rect.clone(),
+            icon: Some(&RELOAD_ICON),
+            ..Default::default()
+        })
+    };
 
     uitk_context.editable_text_box(
         &ui_layout.url_bar_rect,
@@ -254,13 +273,13 @@ pub fn step() {
         &progress_str,
     );
 
-    let url_bar_go = match is_go_button_fired || check_enter_pressed(&input_state) {
+    let url_bar_go = match buttons_state.go || check_enter_pressed(&input_state) {
         false => None,
         true => Some(state.url_text.as_ref().to_owned())
     };
 
     let prev_state_debug = format!("{:?}", state.request_state);
-    try_update_request_state(state, &stylesheet, url_bar_go, is_reload_button_fired, &ui_layout, &input_state, time);
+    try_update_request_state(state, &stylesheet, url_bar_go, &buttons_state, &ui_layout, &input_state, time);
     let new_state_debug = format!("{:?}", state.request_state);
 
     if new_state_debug != prev_state_debug {
@@ -273,40 +292,48 @@ pub fn step() {
 }
 
 fn compute_ui_layout(win_rect: &Rect) -> UiLayout {
-    const RELOAD_BUTTON_W: u32 = 100;
-    const GO_BUTTON_W: u32 = 40;
-    const BAR_H: u32 = 25;
+
+    const BUTTON_SIZE: u32 = 50;
 
     UiLayout {
-        url_bar_rect: Rect {
+
+        home_button_rect: Rect {
             x0: 0,
             y0: 0,
-            w: win_rect.w - GO_BUTTON_W - RELOAD_BUTTON_W,
-            h: BAR_H,
+            w: BUTTON_SIZE,
+            h: BUTTON_SIZE,
+        },
+
+        reload_button_rect: Rect {
+            x0: BUTTON_SIZE as i64,
+            y0: 0,
+            w: BUTTON_SIZE,
+            h: BUTTON_SIZE,
+        },
+
+        url_bar_rect: Rect {
+            x0: 2 * BUTTON_SIZE as i64,
+            y0: 0,
+            w: win_rect.w - 3 * BUTTON_SIZE,
+            h: BUTTON_SIZE / 2,
         },
         go_button_rect: Rect {
-            x0: (win_rect.w - GO_BUTTON_W - RELOAD_BUTTON_W).into(),
+            x0: (win_rect.w - 1 * BUTTON_SIZE).into(),
             y0: 0,
-            w: GO_BUTTON_W,
-            h: BAR_H,
-        },
-        reload_button_rect: Rect {
-            x0: (win_rect.w - RELOAD_BUTTON_W).into(),
-            y0: 0,
-            w: RELOAD_BUTTON_W,
-            h: BAR_H,
+            w: BUTTON_SIZE,
+            h: BUTTON_SIZE,
         },
         progress_bar_rect: Rect {
-            x0: 0,
-            y0: BAR_H.into(),
-            w: win_rect.w,
-            h: BAR_H,
+            x0: 2 * BUTTON_SIZE as i64,
+            y0: (BUTTON_SIZE / 2) as i64,
+            w: win_rect.w - 3 * BUTTON_SIZE,
+            h: BUTTON_SIZE / 2,
         },
         canvas_rect: Rect {
             x0: 0,
-            y0: (2 * BAR_H).into(),
+            y0: BUTTON_SIZE as i64,
             w: win_rect.w,
-            h: win_rect.h - 2 * BAR_H,
+            h: win_rect.h - BUTTON_SIZE,
         },
     }
 }
@@ -328,12 +355,12 @@ fn try_update_request_state(
     state: &mut AppState,
     stylesheet: &StyleSheet,
     url_bar_go: Option<String>,
-    is_reload_button_fired: bool,
+    buttons_state: &ButtonsState,
     ui_layout: &UiLayout,
     input_state: &InputState,
     time: f64,
 ) {
-    match update_request_state(state, stylesheet, url_bar_go, is_reload_button_fired, ui_layout, input_state, time) {
+    match update_request_state(state, stylesheet, url_bar_go, buttons_state, ui_layout, input_state, time) {
         Ok(_) => (),
         Err(err) => {
             log::error!("{}", err);
@@ -371,7 +398,7 @@ fn update_request_state(
     state: &mut AppState,
     stylesheet: &StyleSheet,
     url_bar_go: Option<String>,
-    is_reload_button_fired: bool,
+    buttons_state: &ButtonsState,
     ui_layout: &UiLayout,
     input_state: &InputState,
     time: f64,
@@ -421,6 +448,8 @@ fn update_request_state(
                 time
             );
 
+            uitk_context.fb.fill(stylesheet.colors.background);
+
             let mut y = canvas_rect.y0 + row_h as i64;
             let mut clicked_url = None;
 
@@ -458,58 +487,59 @@ fn update_request_state(
             http_target,
             render_list,
         } => {
-            let mut framebuffer = state.pixel_data.get_framebuffer();
 
-            // let link_hover: Option<&str> = None;
-            // let mut dst_fb = framebuffer.subregion_mut(&ui_layout.canvas_rect);
-            // let r = dst_fb.shape_as_rect();
-            // dst_fb.fill(Color::WHITE);
-            // render_html2(&mut dst_fb, render_list, &r);
+            if buttons_state.home {
+                state.request_state = RequestState::Home
 
-            let mut uitk_context = state.ui_store.get_context(
-                &mut framebuffer,
-                &stylesheet,
-                input_state,
-                &mut state.uuid_provider,
-                time
-            );
+            } else {
 
-            let link_hover = html_canvas(
-                &mut uitk_context,
-                &render_list,
-                &ui_layout.canvas_rect,
-                &mut state.webview_scroll_offsets,
-                &mut state.webview_scroll_dragging,
-            );
+                let mut framebuffer = state.pixel_data.get_framebuffer();
 
-            let new_http_target = {
-                if let Some(url_text) = url_bar_go {
-                    let new_http_target = parse_url(&url_text)?;
-                    Some(new_http_target)
-                } else if is_reload_button_fired {
-                    http_target.clone()
-                } else if input_state.pointer.left_click_trigger {
+                let mut uitk_context = state.ui_store.get_context(
+                    &mut framebuffer,
+                    &stylesheet,
+                    input_state,
+                    &mut state.uuid_provider,
+                    time
+                );
 
-                    let mut new_http_target = None;
-                    if let Some(href) = link_hover {
-                        if let Some(http_target) = http_target {
-                            if !href.starts_with(SCHEME) {
-                                new_http_target = Some(HttpTarget { 
-                                    host:  http_target.host.clone(),
-                                    path: format!("/{}", href),
-                                });
+                let link_hover = html_canvas(
+                    &mut uitk_context,
+                    &render_list,
+                    &ui_layout.canvas_rect,
+                    &mut state.webview_scroll_offsets,
+                    &mut state.webview_scroll_dragging,
+                );
+
+                let new_http_target = {
+                    if let Some(url_text) = url_bar_go {
+                        let new_http_target = parse_url(&url_text)?;
+                        Some(new_http_target)
+                    } else if buttons_state.reload {
+                        http_target.clone()
+                    } else if input_state.pointer.left_click_trigger {
+
+                        let mut new_http_target = None;
+                        if let Some(href) = link_hover {
+                            if let Some(http_target) = http_target {
+                                if !href.starts_with(SCHEME) {
+                                    new_http_target = Some(HttpTarget { 
+                                        host:  http_target.host.clone(),
+                                        path: format!("/{}", href),
+                                    });
+                                }
                             }
                         }
+
+                        new_http_target
+                    } else  {
+                        None
                     }
+                };
 
-                    new_http_target
-                } else  {
-                    None
+                if let Some(new_http_target) = new_http_target {
+                    initiate_redirect(state, new_http_target)?;
                 }
-            };
-
-            if let Some(new_http_target) = new_http_target {
-                initiate_redirect(state, new_http_target)?;
             }
         }
 
@@ -635,10 +665,10 @@ fn update_request_state(
         RequestState::Render { http_target, html } => {
 
             let html_tree = parse_html(html)?;
-            //log::debug!("{}", html_tree.plot());
+            // log::debug!("{}", html_tree.plot());
 
             let block_layout_tree = compute_block_layout(&html_tree);
-            //log::debug!("{}", block_layout_tree.plot());
+            // log::debug!("{}", block_layout_tree.plot());
 
             let page_max_w = ui_layout.canvas_rect.w;
 

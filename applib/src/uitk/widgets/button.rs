@@ -169,7 +169,7 @@ impl Default for ButtonConfig {
                 w: 100,
                 h: 25,
             },
-            text: "Button".to_owned(),
+            text: "".to_owned(),
             icon: None,
             freeze: false,
         }

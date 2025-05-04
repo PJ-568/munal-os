@@ -46,5 +46,17 @@
   "ui.png": {
     "link": "https://www.flaticon.com/free-icon/website_5251542",
     "author": "Rizki Ahmad Fauzi"
-  }  
+  },
+  "arrow_right.png": {
+    "link": "https://www.flaticon.com/free-icon/right_5337915",
+    "author": "KP Arts"
+  },
+  "reload.png": {
+    "link": "https://www.flaticon.com/free-icon/reload_9311549",
+    "author": "shin_icons"
+  },
+  "home.png": {
+    "link": "https://www.flaticon.com/free-icon/home_25694",
+    "author": "Dave Gandy"
+  }
 }

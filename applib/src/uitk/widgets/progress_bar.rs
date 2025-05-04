@@ -23,7 +23,7 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
         };
 
         draw_rect(*fb, &config.rect, colorsheet.background, false);
-        draw_rect(*fb, &bar_rect, colorsheet.element, false);
+        draw_rect(*fb, &bar_rect, colorsheet.accent, false);
 
         let font = font_family.get_default();
 

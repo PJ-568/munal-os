@@ -20,7 +20,7 @@ use crate::{FbViewMut, Framebuffer, OwnedPixels};
 use crate::drawing::text::{FontFamily, DEFAULT_FONT_FAMILY};
 
 
-const TILE_CACHE_MAX_SIZE: usize = 10_000_000; // in bytes
+const TILE_CACHE_MAX_SIZE: usize = 20_000_000; // in bytes
 
 struct CachedTile {
     fb: Framebuffer<OwnedPixels>,
@@ -77,15 +77,15 @@ impl TileCache {
             }
         }
 
-        // if evicted_count > 0 {
-        //     log::debug!(
-        //         "Evicted {} tiles from cache ({:.2} MB), {} remaining ({:.2} MB)",
-        //         evicted_count,
-        //         evicted_size as f64 / 1_000_000.0,
-        //         self.tiles.len(),
-        //         self.tiles.values().map(|tile| tile.fb.size_bytes()).sum::<usize>() as f64 / 1_000_000.0,
-        //     );
-        // }
+        if evicted_count > 0 {
+            log::debug!(
+                "Evicted {} tiles from cache ({:.2} MB), {} remaining ({:.2} MB)",
+                evicted_count,
+                evicted_size as f64 / 1_000_000.0,
+                self.tiles.len(),
+                self.tiles.values().map(|tile| tile.fb.size_bytes()).sum::<usize>() as f64 / 1_000_000.0,
+            );
+        }
     }
 }
 
