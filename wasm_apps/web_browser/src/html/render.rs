@@ -17,9 +17,11 @@ pub fn render_html<F: FbViewMut>(dst_fb: &mut F, render_list: &[RenderItem], src
 
                 // DEBUG
                 //draw_rect_outline(dst_fb, &draw_rect, Color::RED, false, 1);
-
-                let offset_origin = (x0 - src_rect.x0, y0 - src_rect.y0);
-                render_rich_text(dst_fb, offset_origin, formatted);
+                
+                if draw_rect.intersection(src_rect).is_some() {
+                    let offset_origin = (x0 - src_rect.x0, y0 - src_rect.y0);
+                    render_rich_text(dst_fb, offset_origin, formatted);
+                }
             }
 
             RenderItem::Block { rect, color } => {
