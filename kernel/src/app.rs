@@ -783,7 +783,7 @@ fn draw_decorations<F: FbViewMut>(
 
     let color_deco = match highlight {
         true => stylesheet.colors.hover_overlay,
-        false => stylesheet.colors.background,
+        false => stylesheet.colors.frame,
     };
 
     draw_rect(fb, &deco.titlebar_rect, color_deco, false);

@@ -15,10 +15,10 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
             Rect::from_xyxy([x0+m, y0+m, x1-m, y1-m])
         };
 
-        let bar_w = ((container_rect.w as u64) * progress / config.max_val) as u32;
+        let bar_w = ((config.rect.w as u64) * progress / config.max_val) as u32;
 
         let bar_rect = {
-            let Rect { x0, y0, h, .. } = container_rect;
+            let Rect { x0, y0, h, .. } = config.rect;
             Rect { x0, y0, h, w: bar_w }
         };
 
@@ -31,11 +31,11 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
         let text_h = font.char_h as u32;
 
         let text_rect = Rect { 
-            x0: container_rect.x0 + stylesheet.margin as i64,
+            x0: config.rect.x0 + stylesheet.margin as i64,
             y0: 0,
             w: text_w,
             h: text_h
-        }.align_to_rect_vert(&container_rect);
+        }.align_to_rect_vert(&config.rect);
 
         draw_str(
             *fb,

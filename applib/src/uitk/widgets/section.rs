@@ -40,41 +40,6 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
         func(self, &inner_rect);
     }
 
-    pub fn layout_horiz<S>(&mut self, rect: &Rect, count: usize, mut func: S) 
-        where S: FnMut(&mut Self, usize, &Rect)
-    {
-        const MARGIN: u32 = 5;
-
-        let Rect { x0, y0, w, h } = *rect;
-
-        let button_total_w = w - (count as u32 - 1) * MARGIN;
-        let element_h = h - 2 * MARGIN;
-
-        let mut x = x0;
-        for i in 0..count {
-
-            let element_w = {
-                let x0 = (i as f32) / (count as f32) * (button_total_w as f32);
-                let x1 = ((i + 1) as f32) / (count as f32) * (button_total_w as f32);
-
-                let x0 = f32::round(x0) as u32;
-                let x1 = f32::round(x1) as u32;
-
-                x1 - x0
-            };
-
-            let element_rect = Rect { 
-                x0: x, y0: y0 + MARGIN as i64,
-                w: element_w, h: element_h,
-            };
-
-            func(self, i, &element_rect);
-
-            x += (element_w + MARGIN) as i64;
-        }
-
-    }
-
     pub fn layout_box<S>(
         &mut self, rect: &Rect,
         left: f32, top: f32, right: f32, bottom: f32,

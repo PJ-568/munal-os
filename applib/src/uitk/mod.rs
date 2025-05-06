@@ -3,6 +3,7 @@ use alloc::collections::BTreeMap;
 
 mod widgets;
 mod text;
+pub mod layout;
 
 pub use widgets::button::ButtonConfig;
 pub use widgets::dynamic_canvas::TileRenderer;

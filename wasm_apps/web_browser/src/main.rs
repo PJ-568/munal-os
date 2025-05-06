@@ -19,6 +19,7 @@ use applib::content::TrackedContent;
 use applib::input::Keycode;
 use applib::input::{InputEvent, InputState};
 use applib::uitk::{self, IconStore, ButtonConfig, UuidProvider, TextBoxState};
+use applib::uitk::layout::{make_horizontal_layout, make_vertical_layout, LayoutItem};
 use applib::{Framebuffer, OwnedPixels};
 
 mod dns;
@@ -183,7 +184,6 @@ pub fn init() -> () {
     log::set_logger(&LOGGER).unwrap();
 
     let url_text = String::from("https://example.com/");
-    let url_len = url_text.len();
 
     let mut uuid_provider = uitk::UuidProvider::new();
 
@@ -295,40 +295,39 @@ fn compute_ui_layout(win_rect: &Rect) -> UiLayout {
 
     const BUTTON_SIZE: u32 = 50;
 
+    let topbar_rect = Rect {
+        x0: 0,
+        y0: 0,
+        w: win_rect.w,
+        h: BUTTON_SIZE,
+    };
+
+    let layout_1 = make_horizontal_layout(
+        &topbar_rect,
+        &[
+            LayoutItem::Fixed { size: BUTTON_SIZE },
+            LayoutItem::Fixed { size: BUTTON_SIZE },
+            LayoutItem::Float,
+            LayoutItem::Fixed { size: BUTTON_SIZE },
+        ]);
+
+    let layout_2 = make_vertical_layout(
+        &layout_1[2],
+        &[
+            LayoutItem::Float,
+            LayoutItem::Float,
+        ]
+    );
+    
+
     UiLayout {
 
-        home_button_rect: Rect {
-            x0: 0,
-            y0: 0,
-            w: BUTTON_SIZE,
-            h: BUTTON_SIZE,
-        },
+        home_button_rect: layout_1[0].clone(),
+        reload_button_rect: layout_1[1].clone(),
+        url_bar_rect: layout_2[0].clone(),
+        progress_bar_rect: layout_2[1].clone(),
+        go_button_rect: layout_1[3].clone(),
 
-        reload_button_rect: Rect {
-            x0: BUTTON_SIZE as i64,
-            y0: 0,
-            w: BUTTON_SIZE,
-            h: BUTTON_SIZE,
-        },
-
-        url_bar_rect: Rect {
-            x0: 2 * BUTTON_SIZE as i64,
-            y0: 0,
-            w: win_rect.w - 3 * BUTTON_SIZE,
-            h: BUTTON_SIZE / 2,
-        },
-        go_button_rect: Rect {
-            x0: (win_rect.w - 1 * BUTTON_SIZE).into(),
-            y0: 0,
-            w: BUTTON_SIZE,
-            h: BUTTON_SIZE,
-        },
-        progress_bar_rect: Rect {
-            x0: 2 * BUTTON_SIZE as i64,
-            y0: (BUTTON_SIZE / 2) as i64,
-            w: win_rect.w - 3 * BUTTON_SIZE,
-            h: BUTTON_SIZE / 2,
-        },
         canvas_rect: Rect {
             x0: 0,
             y0: BUTTON_SIZE as i64,

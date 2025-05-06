@@ -1,20 +1,25 @@
 use alloc::vec::Vec;
+use alloc::vec;
 use crate::uitk::{UiContext, ButtonConfig};
 use crate::{FbViewMut, Framebuffer, OwnedPixels, Rect};
+use crate::uitk::layout::{make_horizontal_layout, LayoutItem};
 use alloc::string::String;
 
 impl<'a, F: FbViewMut> UiContext<'a, F> {
 
     pub fn choice_buttons_exclusive(&mut self, config: &ChoiceButtonsConfig, selected: &mut usize) {
 
+        let layout = make_horizontal_layout(&config.rect, &vec![LayoutItem::Float; config.choices.len()]);
+        
         let mut new_selected = *selected;
 
-        let func = |context: &mut Self, i: usize, button_rect: &Rect| {
+        for (i, choice) in config.choices.iter().enumerate() {
+    
+            let button_rect = &layout[i];
 
-            let choice: &ChoiceConfig = &config.choices[i];
             let mut active = i == *selected;
 
-            context.button_toggle(
+            self.button_toggle(
                 &ButtonConfig {
                     rect: button_rect.clone(),
                     text: choice.text.clone(),
@@ -27,10 +32,7 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
             if active && i != *selected {
                 new_selected = i;
             }
-        };
-
-        
-        self.layout_horiz(&config.rect, config.choices.len(), func);
+        }
 
         *selected = new_selected;
     }
