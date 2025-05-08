@@ -32,6 +32,7 @@ def main():
     subparsers.add_parser("run")
     subparsers.add_parser("fmt")
     subparsers.add_parser("fix")
+    subparsers.add_parser("clean")
     args = parser.parse_args()
 
     if args.cmd == "build":
@@ -43,6 +44,8 @@ def main():
         _fmt()
     elif args.cmd == "fix":
         _fix()
+    elif args.cmd == "clean":
+        _clean()
 
 
 def _build():
@@ -119,6 +122,10 @@ def _fmt():
 def _fix():
     for crate_path in CRATE_PATHS:
         subprocess.check_call("cargo fix --allow-dirty", shell=True, cwd=crate_path)
+
+def _clean():
+    for crate_path in CRATE_PATHS:
+        subprocess.check_call("cargo clean", shell=True, cwd=crate_path)
 
 
 def _build_crate(
