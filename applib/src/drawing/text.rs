@@ -4,37 +4,43 @@ use alloc::collections::btree_map::BTreeMap;
 use alloc::string::String;
 use alloc::vec::Vec;
 use lazy_static::lazy_static;
+use serde::Deserialize;
 
 use super::primitives::draw_rect;
 use crate::hash::compute_hash;
 
+#[derive(Deserialize)]
 struct FontSpec {
-    name: &'static str,
-    bitmap_png: &'static [u8],
     nb_chars: usize,
     char_h: usize,
     char_w: usize,
     base_y: usize,
 }
 
-fn load_font(spec: &FontSpec) -> Font {
+struct FontData {
+    name: &'static str,
+    bitmap_png_bytes: &'static [u8],
+    spec_json_bytes:  &'static [u8],
+}
+
+fn load_font(data: &FontData) -> Font {
+
+    let spec = serde_json::from_slice(data.spec_json_bytes).expect("Invalid font spec data");
+    let bitmap = decode_png(data.bitmap_png_bytes);
+
     let FontSpec {
-        name,
         nb_chars,
         char_h,
         char_w,
         base_y,
-        ..
-    } = *spec;
-
-    let bitmap = decode_png(spec.bitmap_png);
+    } = spec;
 
     if bitmap.len() != nb_chars * char_w * char_h {
         panic!("Invalid font bitmap size");
     }
 
     Font {
-        name,
+        name: data.name,
         bitmap,
         nb_chars,
         char_h,
@@ -48,11 +54,12 @@ pub struct FontFamily {
 }
 
 impl FontFamily {
-    fn from_font_specs(specs: &[FontSpec]) -> Self {
 
-        let by_size = specs.iter().map(|spec| {
-            let font = load_font(spec);
-            (spec.char_h, font)
+    fn from_font_data(fonts: &[FontData]) -> Self {
+
+        let by_size = fonts.iter().map(|data| {
+            let font = load_font(data);
+            (font.char_h, font)
         })
         .collect();
 
@@ -74,23 +81,17 @@ pub struct Font {
 }
 
 lazy_static! {
-    pub static ref DEFAULT_FONT_FAMILY: FontFamily = FontFamily::from_font_specs(&[
-        FontSpec {
-            name: "default",
-            bitmap_png: include_bytes!("../../fonts/default.png"),
-            nb_chars: 95,
-            char_h: 24,
-            char_w: 12,
-            base_y: 19
+    pub static ref DEFAULT_FONT_FAMILY: FontFamily = FontFamily::from_font_data(&[
+        FontData {
+            name: "noto-sans-mono-24",
+            bitmap_png_bytes: include_bytes!("../../fonts/noto-sans-mono/24/bitmap.png"),
+            spec_json_bytes: include_bytes!("../../fonts/noto-sans-mono/24/spec.json")
         },
-        FontSpec {
-            name: "hack_15",
-            bitmap_png: include_bytes!("../../fonts/hack_15.png"),
-            nb_chars: 95,
-            char_h: 18,
-            char_w: 10,
-            base_y: 14,
-        }
+        FontData {
+            name: "noto-sans-mono-12",
+            bitmap_png_bytes: include_bytes!("../../fonts/noto-sans-mono/12/bitmap.png"),
+            spec_json_bytes: include_bytes!("../../fonts/noto-sans-mono/12/spec.json")
+        },
     ]);
 }
 
