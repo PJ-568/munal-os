@@ -417,7 +417,7 @@ pub fn run_apps<F: FbViewMut>(
 
         let is_foreground = i == n - 1;
 
-        draw_decorations(uitk_context.fb, &stylesheet, font, app_name, &deco, highlight);
+        draw_decorations(uitk_context.fb, &stylesheet, font, &app.descriptor, &deco, highlight);
     
         match &mut app.app_state {
 
@@ -511,8 +511,9 @@ struct AppDecorations {
     content_rect: Rect,
     window_rect: Rect,
     titlebar_rect: Rect,
+    icon_rect: Rect,
     resize_zone_rect: Rect,
-    border_rects: [Rect; 3],
+    border_rects: [Rect; 4],
     handle_rects: [Rect; 2],
     titlebar_hover: bool,
     resize_hover: bool,
@@ -684,30 +685,43 @@ fn position_window(preferred_rect: &Rect, fb_shape: (u32, u32), deco: &AppDecora
 }
 
 fn compute_decorations(app: &App, input_state: &InputState) -> AppDecorations {
+
     const TITLEBAR_HEIGHT: u32 = 32;
     const BORDER_THICKNESS: u32 = 8;
     const RESIZE_HANDLE_LEN: u32 = 32;
     const RESIZE_HANDLE_GAP: u32 = 2;
     const RESIZE_ZONE_LEN: u32 = 32;
     const RESIZE_HANDLE_OFFSET: u32 = 4;
+    const TITLEBAR_GAP: u32 = 8;
+    const ICON_W: u32 = 44;
 
-    let window_rect = Rect {
-        x0: app.rect.x0 - BORDER_THICKNESS as i64,
-        y0: app.rect.y0 - TITLEBAR_HEIGHT as i64,
-        w: app.rect.w + 2 * BORDER_THICKNESS,
-        h: app.rect.h + TITLEBAR_HEIGHT,
+    let window_rect = app.rect.offset(BORDER_THICKNESS as i64);
+
+    let icon_rect = Rect {
+        x0: window_rect.x0,
+        y0: window_rect.y0 - (TITLEBAR_GAP + ICON_W) as i64,
+        w: ICON_W,
+        h: ICON_W,
     };
 
     let titlebar_rect = Rect {
-        x0: window_rect.x0,
-        y0: window_rect.y0,
-        w: window_rect.w,
+        x0: window_rect.x0 + (ICON_W + TITLEBAR_GAP) as i64,
+        y0: window_rect.y0 - (TITLEBAR_HEIGHT + TITLEBAR_GAP) as i64,
+        w: window_rect.w - ICON_W - TITLEBAR_GAP,
         h: TITLEBAR_HEIGHT,
+    };
+    //.align_to_rect_vert(&icon_rect);
+
+    let top_border_rect = Rect {
+        x0: window_rect.x0,
+        y0: app.rect.y0 - BORDER_THICKNESS as i64,
+        w: window_rect.w,
+        h: BORDER_THICKNESS,
     };
 
     let left_border_rect = Rect {
         x0: window_rect.x0,
-        y0: window_rect.y0 + TITLEBAR_HEIGHT as i64,
+        y0: window_rect.y0 + BORDER_THICKNESS as i64,
         w: BORDER_THICKNESS,
         h: app.rect.h,
     };
@@ -721,7 +735,7 @@ fn compute_decorations(app: &App, input_state: &InputState) -> AppDecorations {
 
     let right_border_rect = Rect {
         x0: window_rect.x0 + BORDER_THICKNESS as i64 + app.rect.w as i64,
-        y0: window_rect.y0 + TITLEBAR_HEIGHT as i64,
+        y0: window_rect.y0 + BORDER_THICKNESS as i64,
         w: BORDER_THICKNESS,
         h: app.rect.h - RESIZE_HANDLE_GAP - RESIZE_HANDLE_LEN + BORDER_THICKNESS,
     };
@@ -748,7 +762,9 @@ fn compute_decorations(app: &App, input_state: &InputState) -> AppDecorations {
     };
 
     let pointer = &input_state.pointer;
-    let titlebar_hover = titlebar_rect.check_contains_point(pointer.x, pointer.y);
+    let titlebar_hover =
+        icon_rect.check_contains_point(pointer.x, pointer.y) ||
+        titlebar_rect.check_contains_point(pointer.x, pointer.y);
     let resize_hover = resize_zone_rect.check_contains_point(pointer.x, pointer.y);
     let window_hover = window_rect.check_contains_point(pointer.x, pointer.y);
 
@@ -761,11 +777,15 @@ fn compute_decorations(app: &App, input_state: &InputState) -> AppDecorations {
     AppDecorations {
         content_rect: app.rect.clone(),
         window_rect,
+        icon_rect,
         titlebar_rect,
         titlebar_hover,
         resize_hover,
         window_hover,
-        border_rects: [left_border_rect, right_border_rect, bottom_border_rect],
+        border_rects: [
+            left_border_rect, top_border_rect,
+            right_border_rect, bottom_border_rect
+        ],
         handle_rects: [handle_rect_1, handle_rect_2],
         resize_zone_rect,
         handle_h: RESIZE_HANDLE_LEN + RESIZE_HANDLE_GAP,
@@ -776,7 +796,7 @@ fn draw_decorations<F: FbViewMut>(
     fb: &mut F,
     stylesheet: &StyleSheet,
     font: &Font,
-    app_name: &str,
+    app_descriptor: &AppDescriptor,
     deco: &AppDecorations,
     highlight: bool,
 ) {
@@ -791,6 +811,14 @@ fn draw_decorations<F: FbViewMut>(
         draw_rect(fb, rect, color_deco, false);
     }
 
+    draw_rect(fb, &deco.icon_rect, color_deco, false);
+    let icon_fb_rect = {
+        let (xc, yc) = deco.icon_rect.center();
+        let (w, h) = app_descriptor.icon.shape();
+        Rect::from_center(xc, yc, w, h)
+    };
+    fb.copy_from_fb(app_descriptor.icon, icon_fb_rect.origin(), true);
+
     let text_h = font.char_h as u32;
 
     let padding = (deco.titlebar_rect.h - text_h) / 2;
@@ -802,7 +830,7 @@ fn draw_decorations<F: FbViewMut>(
     }
     .align_to_rect_vert(&deco.titlebar_rect);
 
-    let ellipsized_title = ellipsize_text(app_name, font, text_rect.w);
+    let ellipsized_title = ellipsize_text(app_descriptor.name, font, text_rect.w);
 
     draw_str(
         fb,
