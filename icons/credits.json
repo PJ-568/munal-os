@@ -58,5 +58,13 @@
   "home.png": {
     "link": "https://www.flaticon.com/free-icon/home_25694",
     "author": "Dave Gandy"
+  },
+  "inspect.png": {
+    "link": "https://www.flaticon.com/free-icon/magnifying-glass_151773",
+    "author": "Chanut"
+  },
+  "pause.png": {
+    "link": "https://www.flaticon.com/free-icon/pause_2920686",
+    "author": "inkubators"
   }
 }
