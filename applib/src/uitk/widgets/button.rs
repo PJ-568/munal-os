@@ -118,6 +118,9 @@ fn render_button(
 
         if config.text.is_empty() {
             icon_rect = icon_rect.align_to_rect_horiz(&content_rect);
+        } else {
+            let gap = (content_rect.h as i64 - icon_rect.h as i64) / 2;
+            icon_rect.x0 = content_rect.x0 + i64::max(0, gap);
         }
 
         button_fb.copy_from_fb(*icon, (icon_rect.x0, icon_rect.y0), true);
