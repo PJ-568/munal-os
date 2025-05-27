@@ -1,5 +1,7 @@
 extern crate alloc;
 
+use lazy_static::lazy_static;
+
 use applib::drawing::primitives::draw_rect;
 use applib::drawing::text::{Font, RichText, TextJustification, DEFAULT_FONT_FAMILY};
 use applib::Color;
@@ -7,23 +9,23 @@ use core::cell::OnceCell;
 use guestlib::{PixelData, WasmLogger};
 use applib::Rect;
 use applib::content::TrackedContent;
-use applib::uitk::{self, IconStore, ButtonConfig, ChoiceButtonsConfig, ChoiceConfig, EditableRichText, TextBoxState, UuidProvider};
+use applib::uitk::{self, ButtonConfig, ChoiceButtonsConfig, ChoiceConfig, EditableRichText, TextBoxState, UuidProvider};
+use applib::{Framebuffer, OwnedPixels};
 
 
-
-const ICONS_PNG_DATA: [(&'static str, &[u8]); 3] = [
-    ("justif_left", include_bytes!("../icons/justif_left.png")),
-    ("justif_center", include_bytes!("../icons/justif_center.png")),
-    ("justif_right", include_bytes!("../icons/justif_right.png")),
-];
-
-
+lazy_static! {
+    pub static ref JUSTIF_LEFT_ICON: Framebuffer<OwnedPixels> = 
+        Framebuffer::from_png(include_bytes!("../icons/justif_left.png"));
+    pub static ref JUSTIF_CENTER_ICON: Framebuffer<OwnedPixels> = 
+        Framebuffer::from_png(include_bytes!("../icons/justif_center.png"));
+    pub static ref JUSTIF_RIGHT_ICON: Framebuffer<OwnedPixels> = 
+        Framebuffer::from_png(include_bytes!("../icons/justif_right.png"));
+}
 
 struct AppState {
     pixel_data: PixelData,
     ui_store: uitk::UiStore,
     uuid_provider: UuidProvider,
-    icon_store: IconStore,
 
     textbox_text: TrackedContent<RichText>,
     textbox_prelude: TrackedContent<RichText>,
@@ -79,9 +81,6 @@ pub fn init() -> () {
         pixel_data: PixelData::new(),
         ui_store: uitk::UiStore::new(),
         uuid_provider: UuidProvider::new(),
-
-        icon_store: IconStore::new(&ICONS_PNG_DATA),
-
 
         textbox_text,
         textbox_prelude,
@@ -143,15 +142,15 @@ pub fn step() {
                     choices: vec![
                         ChoiceConfig {
                             text: "".to_owned(),
-                            icon: Some(state.icon_store.get("justif_left")),
+                            icon: Some(&JUSTIF_LEFT_ICON),
                         },
                         ChoiceConfig {
                             text: "".to_owned(),
-                            icon: Some(state.icon_store.get("justif_center")),
+                            icon: Some(&JUSTIF_CENTER_ICON),
                         },
                         ChoiceConfig {
                             text: "".to_owned(),
-                            icon: Some(state.icon_store.get("justif_right")),
+                            icon: Some(&JUSTIF_RIGHT_ICON),
                         },
                     ]
                 },

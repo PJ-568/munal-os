@@ -7,6 +7,7 @@ edition = "2021"
 applib = { path = "../../applib" }
 guestlib = { path = "../../guestlib" }
 log = { version = "0.4.20", default-features = false }
+lazy_static = { version = "1.0" }
 
 # To avoid error about missing tests
 [[bin]]

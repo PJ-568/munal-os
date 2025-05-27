@@ -18,7 +18,7 @@ use guestlib::{PixelData, WasmLogger};
 use applib::content::TrackedContent;
 use applib::input::Keycode;
 use applib::input::{InputEvent, InputState};
-use applib::uitk::{self, IconStore, ButtonConfig, UuidProvider, TextBoxState};
+use applib::uitk::{self, ButtonConfig, UuidProvider, TextBoxState};
 use applib::uitk::layout::{make_horizontal_layout, make_vertical_layout, LayoutItem};
 use applib::{Framebuffer, OwnedPixels};
 
