@@ -39,6 +39,7 @@ def main():
     image.save(output_path / "bitmap.png")
 
     spec = {
+        "size": args.size,
         "nb_chars": len(chars),
         "char_h": char_h,
         "char_w": char_w,

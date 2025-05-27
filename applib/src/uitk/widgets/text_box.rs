@@ -180,7 +180,7 @@ impl FormattableText for TrackedContent<String> {
         let new_id = ContentId::from_hash(&(
             self.get_id(),
             color,
-            font.name,
+            font.name.as_str(),
         ));
         TrackedContent::new_with_id(rich_text, new_id)
     }

@@ -1,6 +1,7 @@
 use crate::{blend_colors, decode_png, Color, FbView, FbViewMut, Rect};
 use alloc::borrow::ToOwned;
 use alloc::collections::btree_map::BTreeMap;
+use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
 use lazy_static::lazy_static;
@@ -11,6 +12,7 @@ use crate::hash::compute_hash;
 
 #[derive(Deserialize)]
 struct FontSpec {
+    size: usize,
     nb_chars: usize,
     char_h: usize,
     char_w: usize,
@@ -18,17 +20,17 @@ struct FontSpec {
 }
 
 struct FontData {
-    name: &'static str,
     bitmap_png_bytes: &'static [u8],
     spec_json_bytes:  &'static [u8],
 }
 
-fn load_font(data: &FontData) -> Font {
+fn load_font(family_name: &str, data: &FontData) -> Font {
 
     let spec = serde_json::from_slice(data.spec_json_bytes).expect("Invalid font spec data");
     let bitmap = decode_png(data.bitmap_png_bytes);
 
     let FontSpec {
+        size,
         nb_chars,
         char_h,
         char_w,
@@ -40,7 +42,8 @@ fn load_font(data: &FontData) -> Font {
     }
 
     Font {
-        name: data.name,
+        name: format!("{}-{}", family_name, size),
+        size,
         bitmap,
         nb_chars,
         char_h,
@@ -50,16 +53,18 @@ fn load_font(data: &FontData) -> Font {
 }
 
 pub struct FontFamily {
-    pub by_size: BTreeMap<usize, Font>
+    by_size: BTreeMap<usize, Font>
 }
+
+const DEFAULT_SIZE: usize = 18;
 
 impl FontFamily {
 
-    fn from_font_data(fonts: &[FontData]) -> Self {
+    fn from_font_data(family_name: &'static str, fonts: &[FontData]) -> Self {
 
         let by_size = fonts.iter().map(|data| {
-            let font = load_font(data);
-            (font.char_h, font)
+            let font = load_font(family_name, data);
+            (font.size, font)
         })
         .collect();
 
@@ -67,12 +72,17 @@ impl FontFamily {
     }
 
     pub fn get_default(&self) -> &Font {
-        self.by_size.values().next().unwrap()
+        self.get_size(DEFAULT_SIZE)
+    }
+
+    pub fn get_size(&self, size: usize) -> &Font {
+        self.by_size.get(&size).expect("No font available for this size")
     }
 }
 
 pub struct Font {
-    pub name: &'static str,
+    pub name: String,
+    pub size: usize,
     bitmap: Vec<u8>,
     pub nb_chars: usize,
     pub char_h: usize,
@@ -81,14 +91,20 @@ pub struct Font {
 }
 
 lazy_static! {
-    pub static ref DEFAULT_FONT_FAMILY: FontFamily = FontFamily::from_font_data(&[
+    pub static ref DEFAULT_FONT_FAMILY: FontFamily = FontFamily::from_font_data("noto-sans-mono", &[
         FontData {
-            name: "noto-sans-mono-24",
             bitmap_png_bytes: include_bytes!("../../fonts/noto-sans-mono/24/bitmap.png"),
             spec_json_bytes: include_bytes!("../../fonts/noto-sans-mono/24/spec.json")
         },
         FontData {
-            name: "noto-sans-mono-12",
+            bitmap_png_bytes: include_bytes!("../../fonts/noto-sans-mono/20/bitmap.png"),
+            spec_json_bytes: include_bytes!("../../fonts/noto-sans-mono/20/spec.json")
+        },
+        FontData {
+            bitmap_png_bytes: include_bytes!("../../fonts/noto-sans-mono/18/bitmap.png"),
+            spec_json_bytes: include_bytes!("../../fonts/noto-sans-mono/18/spec.json")
+        },
+        FontData {
             bitmap_png_bytes: include_bytes!("../../fonts/noto-sans-mono/12/bitmap.png"),
             spec_json_bytes: include_bytes!("../../fonts/noto-sans-mono/12/spec.json")
         },

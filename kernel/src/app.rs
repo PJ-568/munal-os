@@ -531,10 +531,13 @@ fn app_audit_window<F: FbViewMut>(
     scrollable_text_state: &mut TextBoxState,
 ) {
 
-    const ROW_H: u32 = 50;
+    const ROW_H: u32 = 100;
     const AUDIT_WIN_W: u32 = 300;
     const MIN_AUDIT_WIN_H: u32 = 100;
-    const MARGIN_H: u32 = 5;
+    const GAP_H: u32 = 20;
+
+    const SECTION_TITLE_FONT_SIZE: usize = 18;
+    const SECTION_SUBTITLE_FONT_SIZE: usize = 12;
 
     let target_frametime: f32 = 1000.0 / crate::FPS_TARGET as f32;
 
@@ -554,17 +557,16 @@ fn app_audit_window<F: FbViewMut>(
     let net_sent_rate = net_sent_data.iter().sum::<f32>() / history_duration_sec;
 
     struct AuditGraph<'a> {
-        name: &'a str,
+        title: &'a str,
+        subtitle: &'a str,
         max_val: f32,
         series: &'a [GraphSeries<'a>],
     }
 
     let graph_specs = [
         AuditGraph {
-            name: &format!(
-                "Frametime used: {:.1}ms ({:.1}% of system)",
-                frametime_avg, frametime_frac * 100.0
-            ),
+            title: &format!("Frametime used: {:.1}ms", frametime_avg),
+            subtitle: &format!("{:.1}% of system", frametime_frac * 100.0),
             max_val: 1000.0 / 60.0,
             series: &[
                 uitk::GraphSeries {
@@ -575,10 +577,8 @@ fn app_audit_window<F: FbViewMut>(
             ]
         },
         AuditGraph {
-            name: &format!(
-                "Memory usage: {:.0}MB ({:.1}% of system)",
-                mem_avg / 1_000_000.0, mem_frac * 100.0
-            ),
+            title: &format!("Memory usage: {:.0}MB", mem_avg / 1_000_000.0),
+            subtitle: &format!("{:.1}% of system", mem_frac * 100.0),
             max_val: 10_000_000.0,
             series: &[
                 uitk::GraphSeries {
@@ -589,8 +589,9 @@ fn app_audit_window<F: FbViewMut>(
             ]
         },
         AuditGraph {
-            name: &format!(
-                "Network (up/down {:.1}/{:.1} kB/s)",
+            title: "Network",
+            subtitle: &format!(
+                "up/down {:.1}/{:.1} kB/s",
                 net_sent_rate / 1000.0, net_recv_rate / 1000.0, 
             ),
             max_val: 1_000.0,
@@ -609,17 +610,23 @@ fn app_audit_window<F: FbViewMut>(
         },
     ];
 
-    let mut y = deco.window_rect.y0 + deco.handle_h as i64;
+    let title_font = uitk_context.font_family.get_size(SECTION_TITLE_FONT_SIZE);
+    let subtitle_font = uitk_context.font_family.get_size(SECTION_SUBTITLE_FONT_SIZE);
+
+    let mut y = deco.window_rect.y0;
     let x = deco.window_rect.x0 + deco.window_rect.w as i64 + 10;
 
     for spec in graph_specs {
 
-        let font = uitk_context.font_family.get_default();
         let stylesheet = &uitk_context.stylesheet;
-        draw_str(uitk_context.fb, spec.name, x, y, font, stylesheet.colors.text, None);
-        y += font.char_h as i64;
 
-        let graph_h = ROW_H - font.char_h as u32 - MARGIN_H;
+        draw_str(uitk_context.fb, spec.title, x, y, title_font, stylesheet.colors.text, None);
+        y += title_font.char_h as i64;
+
+        draw_str(uitk_context.fb, spec.subtitle, x, y, subtitle_font, stylesheet.colors.text, None);
+        y += subtitle_font.char_h as i64;
+
+        let graph_h = ROW_H - (title_font.char_h + subtitle_font.char_h) as u32;
 
         uitk_context.graph(
             &uitk::GraphConfig {
@@ -630,14 +637,14 @@ fn app_audit_window<F: FbViewMut>(
             spec.series,
         );
 
-        y += ROW_H as i64;
+        y += graph_h as i64;
+        y += GAP_H as i64;
     }
 
-    
-    let font = uitk_context.font_family.get_default();
+
     let stylesheet = &uitk_context.stylesheet;
-    draw_str(uitk_context.fb, "Console log", x, y, font, stylesheet.colors.text, None);
-    y += font.char_h as i64;
+    draw_str(uitk_context.fb, "Console log", x, y, title_font, stylesheet.colors.text, None);
+    y += title_font.char_h as i64;
 
     let [_, _, _, win_y] = deco.window_rect.as_xyxy();
 

@@ -208,7 +208,7 @@ pub fn step() {
                 rect: inner_rect.clone(),
                 choices: vec![
                     ChoiceConfig {
-                        text: "18".to_owned(),
+                        text: "12".to_owned(),
                         ..Default::default()
                     },
                     ChoiceConfig {
@@ -291,10 +291,10 @@ fn get_color(selected: usize) -> Color {
 
 fn get_font(selected: usize) -> &'static Font {
     let size = match selected {
-        0 => 18,
+        0 => 12,
         _ => 24,
     };
 
-    DEFAULT_FONT_FAMILY.by_size.get(&size).unwrap()
+    DEFAULT_FONT_FAMILY.get_size(size)
 }
 
