@@ -29,10 +29,12 @@ pub fn compute_render_list(block_tree: &Tree<Block>, canvas_w: u32) -> Vec<Rende
                 let text_w = i64::max(MIN_TEXT_W as i64, canvas_w as i64 - x0) as u32;
                 let formatted = format_rich_lines(text, text_w, TextJustification::Left);
 
-                let (text_w, text_h) = (formatted.w, formatted.h);
+                let text_h = formatted.h;
+                let max_line_w = formatted.lines.iter().map(|line| line.w).max().unwrap_or(0);
+
                 render_list.push(RenderItem::Text { formatted, origin });
-                
-                (text_w, text_h)
+
+                (max_line_w, text_h)
             },
 
             Block::Container { color, orientation } => {
