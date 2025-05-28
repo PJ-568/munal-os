@@ -12,7 +12,7 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
 
         if trigger.check_contains_point(px, py) {
 
-            let font = self.font_family.get_default();
+            let font = self.font_family.get_size(self.stylesheet.text_sizes.medium);
             let color = self.stylesheet.colors.text;
 
             let (dx, dy) = offset;

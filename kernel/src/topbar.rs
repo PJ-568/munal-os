@@ -17,9 +17,9 @@ pub fn topbar<'a, F: FbViewMut>(
     datetime: DateTime<Utc>,
 ) {
 
-    let font = uitk_context.font_family.get_default();
+    let UiContext { fb, .. } = uitk_context;
 
-    let UiContext { fb, stylesheet, .. } = uitk_context;
+    let font = uitk_context.font_family.get_size(uitk_context.stylesheet.text_sizes.medium);
 
     let (w, _h) = fb.shape();
 
@@ -28,7 +28,7 @@ pub fn topbar<'a, F: FbViewMut>(
     draw_rect(
         *fb,
         &topbar_rect,
-        stylesheet.colors.background,
+        uitk_context.stylesheet.colors.background,
         false
     );
 
@@ -59,7 +59,7 @@ pub fn topbar<'a, F: FbViewMut>(
         &clock_str,
         &topbar_rect,
         font,
-        stylesheet.colors.text,
+        uitk_context.stylesheet.colors.text,
         TextJustification::Right
     );
 
@@ -124,7 +124,7 @@ pub fn topbar<'a, F: FbViewMut>(
     let draw_text_box = |uitk_context: &mut uitk::UiContext<F>, x: &mut i64, text: &str, w: u32| {
 
         let fps_rect = Rect { x0: *x, y0: 0, w, h: TOPBAR_H };
-        let font = uitk_context.font_family.get_default();
+        let font = uitk_context.font_family.get_size(uitk_context.stylesheet.text_sizes.medium);
         draw_rect(uitk_context.fb, &fps_rect, uitk_context.stylesheet.colors.element, false);
         draw_line_in_rect(
             uitk_context.fb,

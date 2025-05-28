@@ -25,7 +25,7 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
         draw_rect(*fb, &config.rect, colorsheet.background, false);
         draw_rect(*fb, &bar_rect, colorsheet.accent, false);
 
-        let font = font_family.get_default();
+        let font = font_family.get_size(stylesheet.text_sizes.medium);
 
         let text_w = (text.len() * font.char_w) as u32;
         let text_h = font.char_h as u32;

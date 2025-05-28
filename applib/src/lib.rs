@@ -18,7 +18,7 @@ use core::ops;
 use geometry::Vec2D;
 use input::InputState;
 
-pub use stylesheet::{StyleSheet, StyleSheetColors};
+pub use stylesheet::{StyleSheet, StyleSheetColors, TextSizes};
 
 #[derive(Clone, Copy, Hash, Debug)]
 #[repr(transparent)]

@@ -53,10 +53,8 @@ fn load_font(family_name: &str, data: &FontData) -> Font {
 }
 
 pub struct FontFamily {
-    by_size: BTreeMap<usize, Font>
+    by_size: BTreeMap<u32, Font>
 }
-
-const DEFAULT_SIZE: usize = 18;
 
 impl FontFamily {
 
@@ -64,18 +62,14 @@ impl FontFamily {
 
         let by_size = fonts.iter().map(|data| {
             let font = load_font(family_name, data);
-            (font.size, font)
+            (font.size as u32, font)
         })
         .collect();
 
         FontFamily { by_size }
     }
 
-    pub fn get_default(&self) -> &Font {
-        self.get_size(DEFAULT_SIZE)
-    }
-
-    pub fn get_size(&self, size: usize) -> &Font {
+    pub fn get_size(&self, size: u32) -> &Font {
         self.by_size.get(&size).expect("No font available for this size")
     }
 }

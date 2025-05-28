@@ -133,7 +133,7 @@ fn render_button(
         w: button_rect.w, h: button_rect.h,
     };
 
-    let font = font_family.get_default();
+    let font = font_family.get_size(stylesheet.text_sizes.medium);
     draw_line_in_rect(
         &mut button_fb, &config.text, &text_rect,
         font,

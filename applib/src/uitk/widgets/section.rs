@@ -13,7 +13,7 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
         const MARGIN: u32 = 10;
 
         let Rect { x0, y0, w, h } = *rect;
-        let font = self.font_family.get_default();
+        let font = self.font_family.get_size(self.stylesheet.text_sizes.medium);
         let color = Color::WHITE;
 
         let text_rect = Rect { 

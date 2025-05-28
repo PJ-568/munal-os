@@ -37,7 +37,7 @@ pub fn step() {
 
     let mut framebuffer = state.pixel_data.get_framebuffer();
 
-    let font = DEFAULT_FONT_FAMILY.get_default();
+    let font = DEFAULT_FONT_FAMILY.get_size(20);
 
     framebuffer.fill(Color::BLACK);
     draw_chrono(&mut framebuffer, t);

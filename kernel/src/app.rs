@@ -394,7 +394,7 @@ pub fn run_apps<F: FbViewMut>(
     //
     // Step and draw apps
 
-    let font = uitk_context.font_family.get_default();
+    let font = uitk_context.font_family.get_size(stylesheet.text_sizes.medium);
 
     let n = apps_manager.z_ordered.len();
 
@@ -441,7 +441,7 @@ pub fn run_apps<F: FbViewMut>(
             AppState::Active { wasm_app, audit_mode, paused } => {
 
                 if *paused {
-                    let font = uitk_context.font_family.get_default();
+                    let font = uitk_context.font_family.get_size(stylesheet.text_sizes.medium);
                     draw_line_in_rect(
                         uitk_context.fb,
                         "PAUSED",
@@ -488,7 +488,7 @@ pub fn run_apps<F: FbViewMut>(
 
             AppState::Crashed { error } => {
 
-                let font = uitk_context.font_family.get_default();
+                let font = uitk_context.font_family.get_size(stylesheet.text_sizes.medium);
                 let (x0, y0) = deco.content_rect.origin();
                 draw_str(
                     uitk_context.fb,
@@ -536,8 +536,8 @@ fn app_audit_window<F: FbViewMut>(
     const MIN_AUDIT_WIN_H: u32 = 100;
     const GAP_H: u32 = 20;
 
-    const SECTION_TITLE_FONT_SIZE: usize = 18;
-    const SECTION_SUBTITLE_FONT_SIZE: usize = 12;
+    const SECTION_TITLE_FONT_SIZE: u32 = 18;
+    const SECTION_SUBTITLE_FONT_SIZE: u32 = 12;
 
     let target_frametime: f32 = 1000.0 / crate::FPS_TARGET as f32;
 
@@ -654,7 +654,7 @@ fn app_audit_window<F: FbViewMut>(
         i64::max(y + MIN_AUDIT_WIN_H as i64, win_y - deco.handle_h as i64 - 1),
     ]);
 
-    uitk_context.text_box(
+    uitk_context.style(|ss| ss.text_sizes.medium = 12).text_box(
         &console_rect,
         console_log,
         scrollable_text_state,

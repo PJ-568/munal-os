@@ -188,6 +188,9 @@ fn parse_hexcolor(hex_str: &str) -> Color {
 
 fn get_inline_block_contents(html_tree: &Tree<HtmlNode>, html_id: NodeId) -> RichText {
 
+    const TEXT_SIZE: u32 = 12;
+    const TEXT_COLOR: Color = Color::BLACK;
+
     let mut inline_text = RichText::new();
 
     #[derive(Clone)]
@@ -227,7 +230,7 @@ fn get_inline_block_contents(html_tree: &Tree<HtmlNode>, html_id: NodeId) -> Ric
         }
     }
 
-    let context = TextContext { color: Color::BLACK, font: DEFAULT_FONT_FAMILY.get_default(), link: None };
+    let context = TextContext { color: TEXT_COLOR, font: DEFAULT_FONT_FAMILY.get_size(TEXT_SIZE), link: None };
     get_contents(html_tree, html_id, &context, &mut inline_text);
 
     inline_text

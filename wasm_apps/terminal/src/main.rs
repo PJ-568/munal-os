@@ -100,7 +100,7 @@ pub fn step() {
         h: win_h,
     };
 
-    let font = DEFAULT_FONT_FAMILY.get_default();
+    let font = DEFAULT_FONT_FAMILY.get_size(stylesheet.text_sizes.small);
 
     let mut editable = EditableRichText { 
         rich_text: &mut state.input_buffer,
@@ -134,7 +134,7 @@ fn get_rich_text_prelude(
     history: &TrackedContent<Vec<EvalResult>>,
 ) -> TrackedContent<RichText> {
 
-    let font = font_family.get_default();
+    let font = font_family.get_size(stylesheet.text_sizes.small);
 
     let mut rich_text = RichText::new();
 

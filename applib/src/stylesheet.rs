@@ -5,6 +5,7 @@ use crate::Color;
 pub struct StyleSheet {
     pub colors: StyleSheetColors,
     pub margin: u32,
+    pub text_sizes: TextSizes,
 }
 
 #[derive(Clone)]
@@ -24,4 +25,12 @@ pub struct StyleSheetColors {
     pub accent: Color,
     pub editable: Color,
     pub outline: Color,
+}
+
+#[derive(Clone, Debug)]
+#[repr(C)]
+pub struct TextSizes {
+    pub small: u32,
+    pub medium: u32,
+    pub large: u32,
 }

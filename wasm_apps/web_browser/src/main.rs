@@ -293,7 +293,7 @@ pub fn step() {
 
 fn compute_ui_layout(win_rect: &Rect) -> UiLayout {
 
-    const BUTTON_SIZE: u32 = 50;
+    const BUTTON_SIZE: u32 = 60;
 
     let topbar_rect = Rect {
         x0: 0,
