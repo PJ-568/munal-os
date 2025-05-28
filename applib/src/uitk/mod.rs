@@ -90,16 +90,29 @@ impl TileCache {
     }
 }
 
+
 pub struct UiContext<'a, F: FbViewMut> {
     pub fb: &'a mut F,
 
-    pub stylesheet: &'a StyleSheet,
+    pub stylesheet: StyleSheet,
     pub input_state: &'a InputState,
     pub uuid_provider: &'a mut UuidProvider,
     pub time: f64,
 
     pub tile_cache: &'a mut TileCache,
     pub font_family: &'static FontFamily,
+}
+
+impl<'a, F: FbViewMut> UiContext<'a, F> {
+
+    pub fn style<'b>(&'b mut self, func: impl Fn(&mut StyleSheet)) -> UiContext<'b, F> {
+        let UiContext { fb, stylesheet, input_state, uuid_provider, time, tile_cache, font_family } = self;
+
+        let mut new_stylesheet = stylesheet.clone();
+        func(&mut new_stylesheet);
+
+        UiContext { fb, stylesheet: new_stylesheet, input_state, uuid_provider, time: *time, tile_cache, font_family }
+    }
 }
 
 pub struct UiStore {
@@ -126,7 +139,7 @@ impl UiStore {
 
         UiContext {
             fb,
-            stylesheet,
+            stylesheet: stylesheet.clone(),
             tile_cache: &mut self.tile_cache,
             input_state,
             uuid_provider,
