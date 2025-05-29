@@ -66,5 +66,13 @@
   "pause.png": {
     "link": "https://www.flaticon.com/free-icon/pause_2920686",
     "author": "inkubators"
+  },
+  "play.png": {
+    "link": "https://www.flaticon.com/free-icon/play-buttton_5577228",
+    "author": "IYAHICON"
+  },
+  "stop.png": {
+    "link": "https://www.flaticon.com/free-icon/stop-button_4029077",
+    "author": "Pixel perfect"
   }
 }

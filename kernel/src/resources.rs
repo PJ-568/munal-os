@@ -96,8 +96,8 @@ lazy_static! {
             init_win_rect: Rect {
                 x0: 600,
                 y0: 200,
-                w: 200,
-                h: 200
+                w: 250,
+                h: 250
             },
             icon: &CHRONO_ICON,
         },

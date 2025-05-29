@@ -50,6 +50,8 @@ version = "0.1.0"
 dependencies = [
  "applib",
  "guestlib",
+ "lazy_static",
+ "log",
  "num-traits",
 ]
 
