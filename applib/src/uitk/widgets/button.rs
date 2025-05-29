@@ -1,5 +1,5 @@
 use crate::drawing::primitives::{draw_rect, draw_rect_outline};
-use crate::drawing::text::{draw_line_in_rect, FontFamily, TextJustification};
+use crate::drawing::text::{self, compute_text_bbox, draw_line_in_rect, draw_str, FontFamily, TextJustification};
 use crate::uitk::{ContentId, UiContext};
 use crate::{FbView, FbViewMut, Framebuffer, OwnedPixels, Rect, StyleSheet};
 use alloc::borrow::ToOwned;
@@ -80,66 +80,86 @@ fn render_button(
 
     draw_rect(&mut button_fb, &button_rect, colorsheet.element, false);
 
-    let mut x = button_rect.x0;
+    let (mut x, gap) = match indicator_visible {
 
-    if indicator_visible {
+        true => {
+            let indicator_h = 3 * button_rect.h / 4;
+            let indicator_w = 10;
+            let gap = i64::max(0, button_rect.h as i64 - indicator_h as i64) / 2;
 
-        let indicator_h = 3 * button_rect.h / 4;
-        let indicator_w = 10;
-        let margin = (button_rect.h - indicator_h) / 2;
+            let indicator_rect = Rect {
+                x0: button_rect.x0 + gap, y0: button_rect.y0 + gap,
+                w: indicator_w, h: indicator_h
+            };
+            let color = match active {
+                true => colorsheet.accent,
+                false => colorsheet.background
+            };
+            draw_rect(&mut button_fb, &indicator_rect, color, false);
 
-        x += margin as i64;
+            let x = button_rect.x0 + gap + indicator_w as i64;
+            (x, gap)
+        },
 
-        let indicator_rect = Rect {
-            x0: x, y0: button_rect.y0 + margin as i64,
-            w: indicator_w, h: indicator_h
-        };
-        let color = match active {
-            true => colorsheet.accent,
-            false => colorsheet.background
-        };
-        draw_rect(&mut button_fb, &indicator_rect, color, false);
+        false => match config.icon {
+            Some(icon) => {
+                let (_icon_w, icon_h) = icon.shape();
+                let gap = i64::max(0, button_rect.h as i64 - icon_h as i64) / 2;
+                (button_rect.x0, gap)
+            },
 
-        x += indicator_w  as i64;
-    }
-
-    let content_rect = {
-        let [_, y0, x1, y1] = button_rect.as_xyxy();
-        Rect::from_xyxy([x, y0, x1, y1])
+            None => (button_rect.x0, 0)
+        }
     };
 
     if let Some(icon) = &config.icon {
+
         let (icon_w, icon_h) = icon.shape();
 
         let mut icon_rect = Rect {
-            x0: content_rect.x0, y0: content_rect.y0,
+            x0: 0, y0: 0,
             w: icon_w, h: icon_h,
-        }.align_to_rect_vert(&content_rect);
+        }.align_to_rect_vert(&button_rect);
 
         if config.text.is_empty() {
+            let content_rect = {
+                let [_, y0, x1, y1] = button_rect.as_xyxy();
+                Rect::from_xyxy([x, y0, x1, y1])
+            };
             icon_rect = icon_rect.align_to_rect_horiz(&content_rect);
         } else {
-            let gap = (content_rect.h as i64 - icon_rect.h as i64) / 2;
-            icon_rect.x0 = content_rect.x0 + i64::max(0, gap);
+            icon_rect.x0 = x + gap;
         }
 
         button_fb.copy_from_fb(*icon, (icon_rect.x0, icon_rect.y0), true);
 
-        x += icon_w as i64
+        let [_, _, x1, _] = icon_rect.as_xyxy();
+        x = x1;
     }
 
-    let text_rect = Rect {
-        x0: x, y0: button_rect.y0,
-        w: button_rect.w, h: button_rect.h,
-    };
+    if !config.text.is_empty() {
 
-    let font = font_family.get_size(stylesheet.text_sizes.medium);
-    draw_line_in_rect(
-        &mut button_fb, &config.text, &text_rect,
-        font,
-        colorsheet.text,
-        TextJustification::Left
-    );
+        let font = font_family.get_size(stylesheet.text_sizes.medium);
+
+        let (text_w, text_h) = compute_text_bbox(&config.text, font);
+
+        let mut text_rect = Rect {
+            x0: 0, y0: 0,
+            w: text_w, h: text_h,
+        }.align_to_rect_vert(&button_rect);
+
+        if config.icon.is_none() && !indicator_visible {
+            let content_rect = {
+                let [_, y0, x1, y1] = button_rect.as_xyxy();
+                Rect::from_xyxy([x, y0, x1, y1])
+            };
+            text_rect = text_rect.align_to_rect_horiz(&content_rect);
+        } else {
+            text_rect.x0 = x + gap;
+        }
+
+        draw_str(&mut button_fb, &config.text, text_rect.x0, text_rect.y0, font, colorsheet.text, None);
+    }
 
     if state == ButtonState::Hover {
         draw_rect(&mut button_fb, &button_rect, colorsheet.hover_overlay, true);
