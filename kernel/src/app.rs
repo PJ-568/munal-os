@@ -671,7 +671,8 @@ fn get_hold_anchor(pointer: &PointerState, rect: &Rect) -> Point2D<i64> {
 
 fn position_window(preferred_rect: &Rect, fb_shape: (u32, u32), deco: &AppDecorations) -> Rect {
 
-    const TOPBAR_GAP: u32 = 5;
+    // TODO: ideally, this should be computed dynamically...
+    const TOPBAR_GAP: u32 = 68;
 
     let (fb_w, fb_h) = fb_shape;
     let Rect {
@@ -681,7 +682,7 @@ fn position_window(preferred_rect: &Rect, fb_shape: (u32, u32), deco: &AppDecora
         h,
     } = *preferred_rect;
 
-    let min_y0 = TOPBAR_H + TOPBAR_GAP + deco.titlebar_rect.h;
+    let min_y0 = TOPBAR_H + TOPBAR_GAP;
 
     x0 = i64::max(0, x0);
     y0 = i64::max(min_y0 as i64, y0);
