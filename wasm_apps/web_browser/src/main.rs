@@ -72,6 +72,7 @@ struct AppState {
 }
 
 struct UiLayout {
+    topbar_rect: Rect,
     home_button_rect: Rect,
     reload_button_rect: Rect,
     url_bar_rect: Rect,
@@ -224,6 +225,9 @@ pub fn step() {
 
     let mut framebuffer = state.pixel_data.get_framebuffer();
 
+    // TODO: avoid this
+    framebuffer.fill(stylesheet.colors.background);
+
     let mut uitk_context = ui_store.get_context(
         &mut framebuffer,
         &stylesheet,
@@ -322,6 +326,7 @@ fn compute_ui_layout(win_rect: &Rect) -> UiLayout {
 
     UiLayout {
 
+        topbar_rect,
         home_button_rect: layout_1[0].clone(),
         reload_button_rect: layout_1[1].clone(),
         url_bar_rect: layout_2[0].clone(),
@@ -446,8 +451,6 @@ fn update_request_state(
                 &mut state.uuid_provider,
                 time
             );
-
-            uitk_context.fb.fill(stylesheet.colors.background);
 
             let mut y = canvas_rect.y0 + row_h as i64;
             let mut clicked_url = None;

@@ -117,20 +117,21 @@ pub fn draw_line_in_rect<F: FbViewMut>(
     justif: TextJustification
 ) -> (i64, i64) {
 
+    let text_h = font.char_h as u32;
     let text_w = (font.char_w * s.len()) as i64;
     let (xc, yc) = rect.center();
 
-    let text_y0 = yc - font.char_h as i64 / 2;
-    let pad = match text_y0 > rect.y0 {
-        true => text_y0 - rect.y0,
-        false => 0
-    };
+    let pad_y = i64::max(0, rect.h as i64 - text_h as i64) / 2;
+
+    let pad_x = pad_y + (font.char_h - font.base_y) as i64;
 
     let text_x0 = match justif {
-        TextJustification::Left => rect.x0 + pad,
+        TextJustification::Left => rect.x0 + pad_x,
         TextJustification::Center => xc - text_w / 2,
-        TextJustification::Right => rect.x0 + rect.w as i64 - text_w - pad,
+        TextJustification::Right => rect.x0 + rect.w as i64 - text_w - pad_x,
     };
+
+    let text_y0 = rect.y0 + pad_y;
 
     draw_str(fb, s, text_x0, text_y0, font, color, None);
 

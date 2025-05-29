@@ -835,28 +835,9 @@ fn draw_decorations<F: FbViewMut>(
     };
     fb.copy_from_fb(app_descriptor.icon, icon_fb_rect.origin(), true);
 
-    let text_h = font.char_h as u32;
+    let ellipsized_title = ellipsize_text(app_descriptor.name, font, deco.titlebar_rect.w);
 
-    let padding = (deco.titlebar_rect.h - text_h) / 2;
-    let text_rect = Rect {
-        x0: deco.titlebar_rect.x0 + padding as i64,
-        y0: 0,
-        w: deco.titlebar_rect.w - 2 * padding,
-        h: text_h,
-    }
-    .align_to_rect_vert(&deco.titlebar_rect);
-
-    let ellipsized_title = ellipsize_text(app_descriptor.name, font, text_rect.w);
-
-    draw_str(
-        fb,
-        &ellipsized_title,
-        text_rect.x0,
-        text_rect.y0,
-        font,
-        stylesheet.colors.text,
-        None,
-    );
+    draw_line_in_rect(fb, &ellipsized_title, &deco.titlebar_rect, font, stylesheet.colors.text, TextJustification::Left);
 
     for rect in deco.handle_rects.iter() {
         draw_rect(fb, rect, stylesheet.colors.accent, false);
