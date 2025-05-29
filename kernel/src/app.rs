@@ -7,7 +7,7 @@ use applib::{FbView, StyleSheet};
 
 use crate::shell::{pie_menu, PieDrawCalls, PieMenuEntry};
 use crate::stats::SystemStats;
-use applib::drawing::primitives::draw_rect;
+use applib::drawing::primitives::{draw_rect, draw_rect_outline};
 use applib::drawing::text::{draw_line_in_rect, draw_str, Font, TextJustification};
 use applib::geometry::{Point2D, Vec2D};
 use applib::uitk::{self, GraphSeries, TextBoxState};
@@ -535,6 +535,7 @@ fn app_audit_window<F: FbViewMut>(
     const AUDIT_WIN_W: u32 = 300;
     const MIN_AUDIT_WIN_H: u32 = 100;
     const GAP_H: u32 = 20;
+    const GRAPH_GAP_H: u32 = 3;
 
     const SECTION_TITLE_FONT_SIZE: u32 = 18;
     const SECTION_SUBTITLE_FONT_SIZE: u32 = 12;
@@ -565,8 +566,8 @@ fn app_audit_window<F: FbViewMut>(
 
     let graph_specs = [
         AuditGraph {
-            title: &format!("Frametime used: {:.1}ms", frametime_avg),
-            subtitle: &format!("{:.1}% of system", frametime_frac * 100.0),
+            title: "Frametime usage",
+            subtitle: &format!("{:.1}ms - {:.1}% of system", frametime_avg, frametime_frac * 100.0),
             max_val: 1000.0 / 60.0,
             series: &[
                 uitk::GraphSeries {
@@ -577,8 +578,8 @@ fn app_audit_window<F: FbViewMut>(
             ]
         },
         AuditGraph {
-            title: &format!("Memory usage: {:.0}MB", mem_avg / 1_000_000.0),
-            subtitle: &format!("{:.1}% of system", mem_frac * 100.0),
+            title: "Memory usage",
+            subtitle: &format!("{:.0}MB - {:.1}% of system", mem_avg / 1_000_000.0, mem_frac * 100.0),
             max_val: 10_000_000.0,
             series: &[
                 uitk::GraphSeries {
@@ -591,7 +592,7 @@ fn app_audit_window<F: FbViewMut>(
         AuditGraph {
             title: "Network",
             subtitle: &format!(
-                "up/down {:.1}/{:.1} kB/s",
+                "up {:.1} down {:.1} kB/s",
                 net_sent_rate / 1000.0, net_recv_rate / 1000.0, 
             ),
             max_val: 1_000.0,
@@ -618,24 +619,27 @@ fn app_audit_window<F: FbViewMut>(
 
     for spec in graph_specs {
 
-        let stylesheet = &uitk_context.stylesheet;
-
-        draw_str(uitk_context.fb, spec.title, x, y, title_font, stylesheet.colors.text, None);
+        draw_str(uitk_context.fb, spec.title, x, y, title_font, uitk_context.stylesheet.colors.text, None);
         y += title_font.char_h as i64;
 
-        draw_str(uitk_context.fb, spec.subtitle, x, y, subtitle_font, stylesheet.colors.text, None);
+        draw_str(uitk_context.fb, spec.subtitle, x, y, subtitle_font, uitk_context.stylesheet.colors.text, None);
         y += subtitle_font.char_h as i64;
 
-        let graph_h = ROW_H - (title_font.char_h + subtitle_font.char_h) as u32;
+        y += GRAPH_GAP_H as i64;
 
+        let graph_h = ROW_H - (title_font.char_h + subtitle_font.char_h) as u32 - GRAPH_GAP_H;
+
+        let graph_rect = Rect { x0: x, y0: y, w: AUDIT_WIN_W, h: graph_h };
         uitk_context.graph(
             &uitk::GraphConfig {
-                rect: Rect { x0: x, y0: y, w: AUDIT_WIN_W, h: graph_h },
+                rect: graph_rect.clone(),
                 max_val: spec.max_val,
                 bg_color: Some(uitk_context.stylesheet.colors.element),
             },
             spec.series,
         );
+
+        draw_rect_outline(uitk_context.fb, &graph_rect, Color::BLACK, false, uitk_context.stylesheet.margin);
 
         y += graph_h as i64;
         y += GAP_H as i64;
@@ -660,6 +664,8 @@ fn app_audit_window<F: FbViewMut>(
         scrollable_text_state,
         true
     );
+
+    draw_rect_outline(uitk_context.fb, &console_rect, Color::BLACK, false, uitk_context.stylesheet.margin);
 }
 
 
@@ -815,11 +821,13 @@ fn draw_decorations<F: FbViewMut>(
     };
 
     draw_rect(fb, &deco.titlebar_rect, color_deco, false);
+    draw_rect_outline(fb, &deco.titlebar_rect, Color::BLACK, false, stylesheet.margin);
     for rect in deco.border_rects.iter() {
         draw_rect(fb, rect, color_deco, false);
     }
 
     draw_rect(fb, &deco.icon_rect, color_deco, false);
+    draw_rect_outline(fb, &deco.icon_rect, Color::BLACK, false, stylesheet.margin);
     let icon_fb_rect = {
         let (xc, yc) = deco.icon_rect.center();
         let (w, h) = app_descriptor.icon.shape();
@@ -853,6 +861,8 @@ fn draw_decorations<F: FbViewMut>(
     for rect in deco.handle_rects.iter() {
         draw_rect(fb, rect, stylesheet.colors.accent, false);
     }
+
+    draw_rect_outline(fb, &deco.window_rect, Color::BLACK, false, stylesheet.margin);
 }
 
 fn ellipsize_text(txt: &str, font: &Font, max_len: u32) -> String {

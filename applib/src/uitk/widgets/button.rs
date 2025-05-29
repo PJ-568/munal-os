@@ -74,9 +74,8 @@ fn render_button(
 
     let colorsheet = &stylesheet.colors;
 
-    draw_rect_outline(&mut button_fb, &rect, colorsheet.outline, false, stylesheet.margin);
 
-    let button_rect = rect.offset(-(stylesheet.margin as i64));
+    let button_rect = rect;
 
     draw_rect(&mut button_fb, &button_rect, colorsheet.element, false);
 
