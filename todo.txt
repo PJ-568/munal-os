@@ -9,10 +9,6 @@
 
 # Cosmetic
 
-* web browser: proper button icons
-* web browser: proper fonts for HN
-* better pie menu icons
-* multiple font sizes
 * choose proper style for UI (color, fonts, etc)
 * desktop wallpaper
 
@@ -23,7 +19,6 @@
 * tidy up applib
 * better names for applib/guestlib?
 * better tile cache
-* proper text layouting utilities
 
 
 # Features
