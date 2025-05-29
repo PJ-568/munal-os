@@ -24,6 +24,10 @@ pub fn html_canvas<'a, F: FbViewMut>(
     let p = &input_state.pointer;
     let vr = dst_rect;
 
+    if !dst_rect.check_contains_point(p.x, p.y) {
+        return None;
+    }
+
     let (x_p_canvas, y_p_canvas) = (
         p.x - vr.x0 + ox,
         p.y - vr.y0 + oy

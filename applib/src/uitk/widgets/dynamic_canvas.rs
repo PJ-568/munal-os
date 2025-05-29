@@ -43,19 +43,8 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
         let x_scroll_enabled = src_max_w > dst_rect.w;
         let y_scroll_enabled = src_max_h > dst_rect.h;
 
-        if x_scroll_enabled {
-            *scroll_x0 = i64::max(0, *scroll_x0);
-            *scroll_x0 = i64::min((src_max_w - dst_rect.w - 1).into(), *scroll_x0);
-        } else {
-            *scroll_x0 = 0;
-        }
-
-        if y_scroll_enabled {
-            *scroll_y0 = i64::max(0, *scroll_y0);
-            *scroll_y0 = i64::min((src_max_h - dst_rect.h - 1).into(), *scroll_y0);
-        } else {
-            *scroll_y0 = 0;
-        }
+        if !x_scroll_enabled { *scroll_x0 = 0; }
+        if !y_scroll_enabled { *scroll_y0 = 0; }
 
         let viewport_rect = &Rect {
             x0: *scroll_x0,
@@ -91,6 +80,7 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
         // Vertical scrollbar
 
         if y_scroll_enabled {
+
             if *y_dragging {
                 *scroll_y0 +=
                     (src_max_h as i64) * input_state.pointer.delta_y / (dst_rect.h as i64);
@@ -105,6 +95,9 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
                     }
                 }
             }
+
+            *scroll_y0 = i64::max(0, *scroll_y0);
+            *scroll_y0 = i64::min((src_max_h - dst_rect.h - 1).into(), *scroll_y0);
 
             let sbar_outer_rect = Rect {
                 x0: (dst_rect.w - SBAR_OUTER_W).into(),
@@ -140,10 +133,14 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
         // Horizontal scrollbar
 
         if x_scroll_enabled {
+
             if *x_dragging {
                 *scroll_x0 +=
                     (src_max_w as i64) * input_state.pointer.delta_x / (dst_rect.w as i64);
             }
+
+            *scroll_x0 = i64::max(0, *scroll_x0);
+            *scroll_x0 = i64::min((src_max_w - dst_rect.w - 1).into(), *scroll_x0);
 
             let sbar_outer_rect = Rect {
                 x0: dst_rect.x0,

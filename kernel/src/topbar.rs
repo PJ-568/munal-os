@@ -1,6 +1,6 @@
 use alloc::format;
 use applib::{FbView, OwnedPixels, Framebuffer};
-use applib::drawing::primitives::draw_rect;
+use applib::drawing::primitives::{draw_rect, draw_rect_outline};
 use applib::drawing::text::{draw_line_in_rect, TextJustification};
 use applib::uitk::{BarValue, HorizBarConfig, UiContext};
 use applib::{Color, Rect};
@@ -17,9 +17,9 @@ pub fn topbar<'a, F: FbViewMut>(
     datetime: DateTime<Utc>,
 ) {
 
-    let UiContext { fb, .. } = uitk_context;
+    let UiContext { fb, stylesheet, .. } = uitk_context;
 
-    let font = uitk_context.font_family.get_size(uitk_context.stylesheet.text_sizes.medium);
+    let font = uitk_context.font_family.get_size(stylesheet.text_sizes.medium);
 
     let (w, _h) = fb.shape();
 
@@ -28,7 +28,7 @@ pub fn topbar<'a, F: FbViewMut>(
     draw_rect(
         *fb,
         &topbar_rect,
-        uitk_context.stylesheet.colors.background,
+        stylesheet.colors.background,
         false
     );
 
@@ -200,4 +200,21 @@ pub fn topbar<'a, F: FbViewMut>(
         icon: &resources::NETWORK_ICON,
         text: &format!("{:.1}/{:.1} kB/s", net_sent_rate / 1000.0, net_recv_rate / 1000.0),
     });
+
+    //
+    // Borders
+
+    let margin = uitk_context.stylesheet.margin;
+    draw_rect(
+        uitk_context.fb,
+        &Rect { x0: 0, y0: 0, w, h: margin },
+        Color::BLACK,
+        false
+    );
+    draw_rect(
+        uitk_context.fb,
+        &Rect { x0: 0, y0: (TOPBAR_H - margin) as i64, w, h: margin },
+        Color::BLACK,
+        false
+    );
 }

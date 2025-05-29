@@ -1,8 +1,6 @@
 # Bugs
 
-* mouse scrolling captured by multiple scrollbars
 * scrollbars interfere with resize button
-
 * resize handle "jumps" to cursor when resizing
 * clicks go through scrollbars
 
