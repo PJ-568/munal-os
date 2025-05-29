@@ -8,7 +8,7 @@ pub fn compute_block_layout(html_tree: &Tree<HtmlNode>) -> Tree<Block> {
     let mut layout_tree = Tree::new();
     let layout_root_id = layout_tree.add_node(
         None,
-        Block::Container { color: None, orientation: Orientation::Vertical }
+        Block::Container { color: None, orientation: Orientation::Vertical, has_margin: false }
     ).unwrap();
 
 
@@ -60,10 +60,15 @@ pub fn parse_block_tag(
                         Some(hex_str) => Some(parse_hexcolor(hex_str)),
                         _ => None,
                     };
+
+                    let has_margin = match name.as_str() {
+                        "html" | "body" => false,
+                        _ => true
+                    };
     
                     let node_id = layout_tree.add_node(
                         Some(layout_id),
-                        Block::Container { color, orientation },
+                        Block::Container { color, orientation, has_margin },
                     ).unwrap();
     
                     parse_block_tag(html_tree, *html_child_id, layout_tree, node_id);
@@ -238,7 +243,7 @@ fn get_inline_block_contents(html_tree: &Tree<HtmlNode>, html_id: NodeId) -> Ric
 
 #[derive(Debug)]
 pub enum Block {
-    Container { color: Option<Color>, orientation: Orientation },
+    Container { color: Option<Color>, orientation: Orientation, has_margin: bool },
     Text { text: RichText },
     Image { w: u32, h: u32 },
 }

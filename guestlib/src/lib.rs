@@ -104,13 +104,23 @@ impl PixelData {
         let fb_h = self.fb_handle.h;
 
         if (fb_w, fb_h) != (w, h) {
-            let new_fb_handle = FramebufferHandle::new(w, h);
-            new_fb_handle.register();
-            let old_fb_handle = core::mem::replace(&mut self.fb_handle, new_fb_handle);
-            old_fb_handle.destroy();
+            self.refresh_framebuffer(w, h);
         }
 
         self.fb_handle.as_framebuffer()
+    }
+
+    pub fn force_refresh(&mut self) {
+        let fb_w = self.fb_handle.w;
+        let fb_h = self.fb_handle.h;
+        self.refresh_framebuffer(fb_w, fb_h);
+    }
+
+    fn refresh_framebuffer(&mut self, new_w: u32, new_h: u32) {
+        let new_fb_handle = FramebufferHandle::new(new_w, new_h);
+        new_fb_handle.register();
+        let old_fb_handle = core::mem::replace(&mut self.fb_handle, new_fb_handle);
+        old_fb_handle.destroy();
     }
 }
 

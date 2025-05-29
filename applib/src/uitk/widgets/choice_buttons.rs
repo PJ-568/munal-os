@@ -9,7 +9,9 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
 
     pub fn choice_buttons_exclusive(&mut self, config: &ChoiceButtonsConfig, selected: &mut usize) {
 
-        let layout = make_horizontal_layout(&config.rect, &vec![LayoutItem::Float; config.choices.len()]);
+        let margin = self.stylesheet.margin;
+
+        let layout = make_horizontal_layout(&config.rect, margin, &vec![LayoutItem::Float; config.choices.len()]);
         
         let mut new_selected = *selected;
 

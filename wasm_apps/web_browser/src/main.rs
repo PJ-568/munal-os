@@ -9,9 +9,10 @@ use std::fmt::Debug;
 use alloc::collections::BTreeMap;
 use alloc::format;
 use anyhow::Context;
+use applib::drawing::primitives::draw_rect;
 use html::render_list::RenderItem;
 use lazy_static::lazy_static;
-use applib::{FbViewMut, Rect, StyleSheet};
+use applib::{Color, FbViewMut, Rect, StyleSheet};
 use core::cell::OnceCell;
 use guestlib::{PixelData, WasmLogger};
 
@@ -225,9 +226,6 @@ pub fn step() {
 
     let mut framebuffer = state.pixel_data.get_framebuffer();
 
-    // TODO: avoid this
-    framebuffer.fill(stylesheet.colors.background);
-
     let mut uitk_context = ui_store.get_context(
         &mut framebuffer,
         &stylesheet,
@@ -236,7 +234,7 @@ pub fn step() {
         time
     );
 
-    let ui_layout = compute_ui_layout(&win_rect);
+    let ui_layout = compute_ui_layout(&stylesheet, &win_rect);
 
     let buttons_state = ButtonsState {
         home: uitk_context.button(&uitk::ButtonConfig {
@@ -295,19 +293,22 @@ pub fn step() {
     }
 }
 
-fn compute_ui_layout(win_rect: &Rect) -> UiLayout {
+fn compute_ui_layout(stylesheet: &StyleSheet, win_rect: &Rect) -> UiLayout {
 
     const BUTTON_SIZE: u32 = 60;
 
-    let topbar_rect = Rect {
-        x0: 0,
-        y0: 0,
-        w: win_rect.w,
-        h: BUTTON_SIZE,
-    };
+    let layout_1 = make_vertical_layout(
+        &win_rect.zero_origin().offset(-(stylesheet.margin as i64)),
+        stylesheet.margin,
+        &[
+            LayoutItem::Fixed { size: BUTTON_SIZE },
+            LayoutItem::Float
+        ]
+    );
 
-    let layout_1 = make_horizontal_layout(
-        &topbar_rect,
+    let layout_2 = make_horizontal_layout(
+        &layout_1[0],
+        stylesheet.margin,
         &[
             LayoutItem::Fixed { size: BUTTON_SIZE },
             LayoutItem::Fixed { size: BUTTON_SIZE },
@@ -315,8 +316,9 @@ fn compute_ui_layout(win_rect: &Rect) -> UiLayout {
             LayoutItem::Fixed { size: BUTTON_SIZE },
         ]);
 
-    let layout_2 = make_vertical_layout(
-        &layout_1[2],
+    let layout_3 = make_vertical_layout(
+        &layout_2[2],
+        stylesheet.margin,
         &[
             LayoutItem::Float,
             LayoutItem::Float,
@@ -325,20 +327,13 @@ fn compute_ui_layout(win_rect: &Rect) -> UiLayout {
     
 
     UiLayout {
-
-        topbar_rect,
-        home_button_rect: layout_1[0].clone(),
-        reload_button_rect: layout_1[1].clone(),
-        url_bar_rect: layout_2[0].clone(),
-        progress_bar_rect: layout_2[1].clone(),
-        go_button_rect: layout_1[3].clone(),
-
-        canvas_rect: Rect {
-            x0: 0,
-            y0: BUTTON_SIZE as i64,
-            w: win_rect.w,
-            h: win_rect.h - BUTTON_SIZE,
-        },
+        topbar_rect: layout_1[0].clone(),
+        home_button_rect: layout_2[0].clone(),
+        reload_button_rect: layout_2[1].clone(),
+        url_bar_rect: layout_3[0].clone(),
+        progress_bar_rect: layout_3[1].clone(),
+        go_button_rect: layout_2[3].clone(),
+        canvas_rect: layout_1[1].clone(),
     }
 }
 
@@ -491,8 +486,8 @@ fn update_request_state(
         } => {
 
             if buttons_state.home {
-                state.request_state = RequestState::Home
-
+                state.request_state = RequestState::Home;
+                state.pixel_data.force_refresh();
             } else {
 
                 let mut framebuffer = state.pixel_data.get_framebuffer();

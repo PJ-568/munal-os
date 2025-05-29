@@ -21,8 +21,6 @@ pub fn compute_render_list(block_tree: &Tree<Block>, canvas_w: u32) -> Vec<Rende
         let node = block_tree.get_node(node_id).unwrap();
         let (x0, y0) = origin;
 
-        let (x0, y0) = (x0 + MARGIN as i64, y0 + MARGIN as i64);
-
         let (w, h) = match &node.data {
 
             Block::Text { text } => {
@@ -37,9 +35,12 @@ pub fn compute_render_list(block_tree: &Tree<Block>, canvas_w: u32) -> Vec<Rende
                 (max_line_w, text_h)
             },
 
-            Block::Container { color, orientation } => {
+            Block::Container { color, orientation, has_margin } => {
 
                 let (mut container_w, mut container_h) = (0, 0);
+
+                let margin = if *has_margin { MARGIN } else { 0 };
+                let (x0, y0) = (x0 + margin as i64, y0 + margin as i64);
 
                 match orientation {
                     Orientation::Vertical => {
@@ -69,15 +70,15 @@ pub fn compute_render_list(block_tree: &Tree<Block>, canvas_w: u32) -> Vec<Rende
                     color: *color,
                 });
 
-                (container_w, container_h)
+                (container_w + margin, container_h + margin)
 
             },
 
             // We don't support actually rendering the images yet
             Block::Image { w, h } => (*w, *h),
         };
-
-        (w + MARGIN, h + MARGIN)
+        
+        (w, h)
     }
 
     process_node(&mut render_list, block_tree, NodeId(0), canvas_w, (0, 0));
