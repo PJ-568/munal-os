@@ -97,7 +97,11 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
             } else {
                 for event in input_state.events {
                     if let Some(InputEvent::Scroll { delta }) = event {
-                        *scroll_y0 -= delta * (SCROLL_SPEED as i64);
+                        let x = input_state.pointer.x;
+                        let y = input_state.pointer.y;
+                        if dst_rect.check_contains_point(x, y) {
+                            *scroll_y0 -= delta * (SCROLL_SPEED as i64);
+                        }
                     }
                 }
             }
