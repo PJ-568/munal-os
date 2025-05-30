@@ -40,7 +40,7 @@ impl TileCache {
         }
     }
 
-    fn fetch_or_create<F>(&mut self, content_id: ContentId, time: f64, create_func: F) -> &Framebuffer<OwnedPixels> 
+    pub fn fetch_or_create<F>(&mut self, content_id: ContentId, time: f64, create_func: F) -> &Framebuffer<OwnedPixels> 
         where F: FnOnce() -> Framebuffer<OwnedPixels>
     
     {

@@ -4,15 +4,15 @@ use alloc::format;
 use applib::drawing::primitives::draw_rect;
 use lazy_static::lazy_static;
 use applib::drawing::text::{draw_line_in_rect, draw_str, TextJustification, DEFAULT_FONT_FAMILY};
-use applib::{Color, FbViewMut};
+use applib::{Color, FbView, FbViewMut, Rect};
 use applib::{Framebuffer, OwnedPixels};
-use applib::uitk::{self, ButtonConfig, UuidProvider, TextBoxState};
+use applib::uitk::{self, ButtonConfig, ContentId, TextBoxState, UuidProvider};
 use applib::uitk::layout::{make_horizontal_layout, make_vertical_layout, LayoutItem};
 use core::cell::OnceCell;
 use guestlib::{PixelData, WasmLogger};
 
 mod drawing;
-use drawing::draw_chrono;
+use drawing::{draw_chrono, draw_background};
 
 static LOGGER: WasmLogger = WasmLogger;
 const LOGGING_LEVEL: log::LevelFilter = log::LevelFilter::Debug;
@@ -204,7 +204,18 @@ pub fn step() {
         }
     };
 
-    let mut canvas_fb = framebuffer.subregion_mut(&layout_1[1]);
+    let mut canvas_fb = uitk_context.fb.subregion_mut(&layout_1[1]);
+    let (canvas_w, canvas_h) = canvas_fb.shape();
+
+    let bg_content_id = ContentId::from_hash(&(canvas_w, canvas_h));
+
+    let bg_fb = uitk_context.tile_cache.fetch_or_create(bg_content_id, t_now, || {
+        let mut bg_fb = Framebuffer::new_owned(canvas_w, canvas_h);
+        draw_background(&mut bg_fb);
+        bg_fb
+    });
+
+    canvas_fb.copy_from_fb(bg_fb, (0, 0), false);
 
     draw_chrono(&mut canvas_fb, elapsed);
 }
