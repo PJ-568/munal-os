@@ -137,6 +137,8 @@ pub fn step() {
         format!("{:02}:{:02}.{:03}", disp_min, disp_s, disp_ms)
     };
 
+    draw_rect(uitk_context.fb, &layout_1[0], stylesheet.colors.element, false);
+
     draw_line_in_rect(
         uitk_context.fb,
         &time_str,
