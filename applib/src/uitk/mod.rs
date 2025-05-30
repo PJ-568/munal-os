@@ -5,7 +5,7 @@ mod widgets;
 mod text;
 pub mod layout;
 
-pub use widgets::button::ButtonConfig;
+pub use widgets::button::{ButtonConfig, ButtonIndicatorMode};
 pub use widgets::dynamic_canvas::TileRenderer;
 pub use widgets::progress_bar::ProgressBarConfig;
 pub use widgets::static_canvas::set_autoscroll;

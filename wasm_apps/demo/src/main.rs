@@ -152,7 +152,8 @@ pub fn step() {
                             text: "".to_owned(),
                             icon: Some(("justif_right_icon".to_owned(), &JUSTIF_RIGHT_ICON)),
                         },
-                    ]
+                    ],
+                indicator_mode: uitk::ButtonIndicatorMode::Light
                 },
                 &mut state.selected_justif
             )
@@ -188,7 +189,8 @@ pub fn step() {
                         text: "Green".to_owned(),
                         ..Default::default()
                     },
-                ]
+                ],
+                indicator_mode: uitk::ButtonIndicatorMode::Border
             },
             &mut state.selected_color
         )
@@ -215,7 +217,8 @@ pub fn step() {
                         text: "24".to_owned(),
                         ..Default::default()
                     },
-                ]
+                ],
+                indicator_mode: uitk::ButtonIndicatorMode::Border
             },
             &mut state.selected_size
         )

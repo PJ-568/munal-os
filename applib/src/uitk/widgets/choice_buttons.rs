@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 use alloc::vec;
-use crate::uitk::{UiContext, ButtonConfig};
+use crate::uitk::{UiContext, ButtonConfig, ButtonIndicatorMode};
 use crate::{FbViewMut, Framebuffer, OwnedPixels, Rect};
 use crate::uitk::layout::{make_horizontal_layout, LayoutItem};
 use alloc::string::String;
@@ -27,6 +27,7 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
                     text: choice.text.clone(),
                     icon: choice.icon.clone(),
                     freeze: i == *selected,
+                    indicator_mode: config.indicator_mode,
                 },
                 &mut active
             );
@@ -56,6 +57,7 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
                     text: choice.text.clone(),
                     icon: choice.icon.clone(),
                     freeze: false,
+                    indicator_mode: config.indicator_mode,
                 },
                 &mut active
             );
@@ -74,7 +76,8 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
 
 pub struct ChoiceButtonsConfig {
     pub rect: Rect,
-    pub choices: Vec<ChoiceConfig>
+    pub choices: Vec<ChoiceConfig>,
+    pub indicator_mode: ButtonIndicatorMode,
 }
 
 

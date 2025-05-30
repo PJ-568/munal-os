@@ -1,7 +1,7 @@
 use crate::drawing::primitives::{draw_rect, draw_rect_outline};
 use crate::drawing::text::{self, compute_text_bbox, draw_line_in_rect, draw_str, FontFamily, TextJustification};
 use crate::uitk::{ContentId, UiContext};
-use crate::{FbView, FbViewMut, Framebuffer, OwnedPixels, Rect, StyleSheet};
+use crate::{Color, FbView, FbViewMut, Framebuffer, OwnedPixels, Rect, StyleSheet};
 use alloc::borrow::ToOwned;
 use alloc::string::String;
 
@@ -9,15 +9,15 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
 
     pub fn button(&mut self, config: &ButtonConfig) -> bool {
         let mut active = false;
-        self.button_inner(config, &mut active, false);
+        self.button_inner(config, &mut active);
         active
     }
 
     pub fn button_toggle(&mut self, config: &ButtonConfig, active: &mut bool) {
-        self.button_inner(config, active, true);
+        self.button_inner(config, active);
     }
 
-    fn button_inner(&mut self, config: &ButtonConfig, active: &mut bool, indicator_visible: bool) {
+    fn button_inner(&mut self, config: &ButtonConfig, active: &mut bool) {
 
         let UiContext {
             fb, input_state, stylesheet, font_family, tile_cache, ..
@@ -50,7 +50,7 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
         ));
 
         let button_fb = tile_cache.fetch_or_create(content_id, self.time, || {
-            render_button(stylesheet, font_family, config, state, *active, indicator_visible)
+            render_button(stylesheet, font_family, config, state, *active)
         });
 
         let Rect { x0, y0, .. } = config.rect;
@@ -64,7 +64,6 @@ fn render_button(
     config: &ButtonConfig,
     state: ButtonState,
     active: bool,
-    indicator_visible: bool
 ) -> Framebuffer<OwnedPixels> {
 
     let rect = config.rect.zero_origin();
@@ -79,9 +78,9 @@ fn render_button(
 
     draw_rect(&mut button_fb, &button_rect, colorsheet.element, false);
 
-    let (mut x, gap) = match indicator_visible {
+    let (mut x, gap) = match config.indicator_mode {
 
-        true => {
+        ButtonIndicatorMode::Light => {
             let indicator_h = 3 * button_rect.h / 4;
             let indicator_w = 10;
             let gap = i64::max(0, button_rect.h as i64 - indicator_h as i64) / 2;
@@ -100,7 +99,7 @@ fn render_button(
             (x, gap)
         },
 
-        false => match &config.icon {
+        _ => match &config.icon {
             Some((_, icon_fb)) => {
                 let (_icon_w, icon_h) = icon_fb.shape();
                 let gap = i64::max(0, button_rect.h as i64 - icon_h as i64) / 2;
@@ -110,6 +109,13 @@ fn render_button(
             None => (button_rect.x0, 0)
         }
     };
+
+    if config.indicator_mode == ButtonIndicatorMode::Border && active {
+        draw_rect_outline(
+            &mut button_fb, &button_rect,
+            Color::WHITE, false, stylesheet.margin
+        );
+    }
 
     if let Some(icon) = &config.icon {
 
@@ -148,7 +154,7 @@ fn render_button(
             w: text_w, h: text_h,
         }.align_to_rect_vert(&button_rect);
 
-        if config.icon.is_none() && !indicator_visible {
+        if config.icon.is_none() && config.indicator_mode != ButtonIndicatorMode::Light {
             let content_rect = {
                 let [_, y0, x1, y1] = button_rect.as_xyxy();
                 Rect::from_xyxy([x, y0, x1, y1])
@@ -175,12 +181,20 @@ enum ButtonState {
     Clicked,
 }
 
+#[derive(PartialEq, Hash, Clone, Copy)]
+pub enum ButtonIndicatorMode {
+    Off,
+    Light,
+    Border
+}
+
 #[derive(Clone)]
 pub struct ButtonConfig {
     pub rect: Rect,
     pub text: String,
     pub icon: Option<(String, &'static Framebuffer<OwnedPixels>)>,
     pub freeze: bool,
+    pub indicator_mode: ButtonIndicatorMode,
 }
 
 impl Default for ButtonConfig {
@@ -195,6 +209,7 @@ impl Default for ButtonConfig {
             text: "".to_owned(),
             icon: None,
             freeze: false,
+            indicator_mode: ButtonIndicatorMode::Off
         }
     }
 }
