@@ -46,7 +46,7 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
             &config.rect,
             &config.text,
             *active,
-            // TODO: icon hash
+            config.icon.as_ref().map(|(name, _)| name),
         ));
 
         let button_fb = tile_cache.fetch_or_create(content_id, self.time, || {
@@ -100,9 +100,9 @@ fn render_button(
             (x, gap)
         },
 
-        false => match config.icon {
-            Some(icon) => {
-                let (_icon_w, icon_h) = icon.shape();
+        false => match &config.icon {
+            Some((_, icon_fb)) => {
+                let (_icon_w, icon_h) = icon_fb.shape();
                 let gap = i64::max(0, button_rect.h as i64 - icon_h as i64) / 2;
                 (button_rect.x0, gap)
             },
@@ -113,7 +113,8 @@ fn render_button(
 
     if let Some(icon) = &config.icon {
 
-        let (icon_w, icon_h) = icon.shape();
+        let (_, icon_fb) = icon;
+        let (icon_w, icon_h) = icon_fb.shape();
 
         let mut icon_rect = Rect {
             x0: 0, y0: 0,
@@ -130,7 +131,7 @@ fn render_button(
             icon_rect.x0 = x + gap;
         }
 
-        button_fb.copy_from_fb(*icon, (icon_rect.x0, icon_rect.y0), true);
+        button_fb.copy_from_fb(*icon_fb, (icon_rect.x0, icon_rect.y0), true);
 
         let [_, _, x1, _] = icon_rect.as_xyxy();
         x = x1;
@@ -178,7 +179,7 @@ enum ButtonState {
 pub struct ButtonConfig {
     pub rect: Rect,
     pub text: String,
-    pub icon: Option<&'static Framebuffer<OwnedPixels>>,
+    pub icon: Option<(String, &'static Framebuffer<OwnedPixels>)>,
     pub freeze: bool,
 }
 

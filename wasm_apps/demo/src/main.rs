@@ -142,15 +142,15 @@ pub fn step() {
                     choices: vec![
                         ChoiceConfig {
                             text: "".to_owned(),
-                            icon: Some(&JUSTIF_LEFT_ICON),
+                            icon: Some(("justif_left_icon".to_owned(), &JUSTIF_LEFT_ICON)),
                         },
                         ChoiceConfig {
                             text: "".to_owned(),
-                            icon: Some(&JUSTIF_CENTER_ICON),
+                            icon: Some(("justif_center_icon".to_owned(), &JUSTIF_CENTER_ICON)),
                         },
                         ChoiceConfig {
                             text: "".to_owned(),
-                            icon: Some(&JUSTIF_RIGHT_ICON),
+                            icon: Some(("justif_right_icon".to_owned(), &JUSTIF_RIGHT_ICON)),
                         },
                     ]
                 },

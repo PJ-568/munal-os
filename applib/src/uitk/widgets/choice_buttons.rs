@@ -25,7 +25,7 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
                 &ButtonConfig {
                     rect: button_rect.clone(),
                     text: choice.text.clone(),
-                    icon: choice.icon,
+                    icon: choice.icon.clone(),
                     freeze: i == *selected,
                 },
                 &mut active
@@ -54,7 +54,7 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
                 &ButtonConfig {
                     rect: Rect { x0: x, y0, w: button_w, h },
                     text: choice.text.clone(),
-                    icon: choice.icon,
+                    icon: choice.icon.clone(),
                     freeze: false,
                 },
                 &mut active
@@ -81,5 +81,5 @@ pub struct ChoiceButtonsConfig {
 #[derive(Clone, Default)]
 pub struct ChoiceConfig {
     pub text: String,
-    pub icon: Option<&'static Framebuffer<OwnedPixels>>,
+    pub icon: Option<(String, &'static Framebuffer<OwnedPixels>)>,
 }

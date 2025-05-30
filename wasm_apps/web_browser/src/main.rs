@@ -239,17 +239,17 @@ pub fn step() {
     let buttons_state = ButtonsState {
         home: uitk_context.button(&uitk::ButtonConfig {
             rect: ui_layout.home_button_rect.clone(),
-            icon: Some(&HOME_ICON),
+            icon: Some(("home_icon".to_owned(), &HOME_ICON)),
             ..Default::default()
         }),
         go: uitk_context.button(&uitk::ButtonConfig {
             rect: ui_layout.go_button_rect.clone(),
-            icon: Some(&ARROW_RIGHT_ICON),
+            icon: Some(("arrow_right_icon".to_owned(), &ARROW_RIGHT_ICON)),
             ..Default::default()
         }),
         reload: uitk_context.button(&uitk::ButtonConfig {
             rect: ui_layout.reload_button_rect.clone(),
-            icon: Some(&RELOAD_ICON),
+            icon: Some(("reload_icon".to_owned(), &RELOAD_ICON)),
             ..Default::default()
         })
     };
@@ -458,7 +458,7 @@ fn update_request_state(
                 let clicked = uitk_context.button(&ButtonConfig { 
                     rect: button_rect,
                     text: fav.link.to_string(),
-                    icon: Some(fav.icon),
+                    icon: Some((fav.link.to_string(), fav.icon)),
                     ..Default::default()
                 });
                 y += (2 * row_h) as i64;

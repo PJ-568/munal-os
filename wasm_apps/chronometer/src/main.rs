@@ -39,8 +39,8 @@ struct AppState {
 #[derive(Debug)]
 enum ChronoState {
     Stopped,
-    Paused { t_start: f64, t_paused: f64 },
-    Running { t_start: f64 },
+    Paused { t_elapsed: f64 },
+    Running { t_resume: f64, t_offset: f64 },
 }
 
 static mut APP_STATE: OnceCell<AppState> = OnceCell::new();
@@ -119,8 +119,8 @@ pub fn step() {
 
     let elapsed = match state.chrono_state {
         ChronoState::Stopped => 0.0,
-        ChronoState::Paused { t_start, t_paused } => t_paused - t_start,
-        ChronoState::Running { t_start } => t_now - t_start,
+        ChronoState::Paused { t_elapsed } => t_elapsed,
+        ChronoState::Running { t_resume, t_offset } => t_now - t_resume + t_offset,
     };
 
     let time_str = {
@@ -148,55 +148,55 @@ pub fn step() {
         ChronoState::Stopped => {
             let play_pressed = uitk_context.button(&ButtonConfig { 
                 rect: layout_2[2].clone(),
-                icon: Some(&PLAY_ICON),
+                icon: Some(("play_icon".to_owned(), &PLAY_ICON)),
                 ..Default::default()
             });
 
             if play_pressed {
-                state.chrono_state = ChronoState::Running { t_start: t_now };
+                state.chrono_state = ChronoState::Running { t_resume: t_now, t_offset: 0.0 };
             }
         },
 
-        ChronoState::Paused { t_start, .. } => {
+        ChronoState::Paused { t_elapsed } => {
 
             let stop_pressed = uitk_context.button(&ButtonConfig { 
                 rect: layout_2[1].clone(),
-                icon: Some(&STOP_ICON),
+                icon: Some(("stop_icon".to_owned(), &STOP_ICON)),
                 ..Default::default()
             });
 
             let play_pressed = uitk_context.button(&ButtonConfig { 
                 rect: layout_2[2].clone(),
-                icon: Some(&PLAY_ICON),
+                icon: Some(("play_icon".to_owned(), &PLAY_ICON)),
                 ..Default::default()
             });
 
             if stop_pressed {
                 state.chrono_state = ChronoState::Stopped;
             } else if play_pressed {
-                state.chrono_state = ChronoState::Running { t_start };
+                state.chrono_state = ChronoState::Running { t_resume: t_now, t_offset: t_elapsed };
             }
 
         }
 
-        ChronoState::Running { t_start } => {
+        ChronoState::Running { t_resume, t_offset } => {
 
             let stop_pressed = uitk_context.button(&ButtonConfig { 
                 rect: layout_2[1].clone(),
-                icon: Some(&STOP_ICON),
+                icon: Some(("stop_icon".to_owned(), &STOP_ICON)),
                 ..Default::default()
             });
 
             let pause_pressed = uitk_context.button(&ButtonConfig { 
                 rect: layout_2[2].clone(),
-                icon: Some(&PAUSE_ICON),
+                icon: Some(("pause_icon".to_owned(), &PAUSE_ICON)),
                 ..Default::default()
             });
 
             if stop_pressed {
                 state.chrono_state = ChronoState::Stopped;
             } else if pause_pressed {
-                state.chrono_state = ChronoState::Paused { t_start, t_paused: t_now };
+                state.chrono_state = ChronoState::Paused { t_elapsed: t_now - t_resume + t_offset };
             }
 
         }
