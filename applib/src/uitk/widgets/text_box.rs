@@ -47,7 +47,9 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
         let bg_color = self.stylesheet.colors.editable;
 
         let old_cursor = state.cursor;
+
         string_input(text, input_state, allow_newline, &mut state.cursor, *uuid_provider);
+
         let cursor_changed = state.cursor != old_cursor;
 
         self.text_box_inner(dst_rect, text, bg_color, state, cursor_changed, autoscroll, prelude, true);
@@ -60,23 +62,13 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
         text: &T,
         bg_color: Color,
         state: &mut TextBoxState,
-        cursor_changed: bool,
+        mut cursor_changed: bool,
         autoscroll: bool,
         prelude: Option<&U>,
         cursor_enabled: bool,
     ) {
 
         let time_sec = (self.time as u64) / 1000;
-
-        if !cursor_enabled {
-            state.cursor_visible = false;
-        } else if cursor_changed {
-            state.last_blink_t = time_sec;
-            state.cursor_visible = true;
-        } else if time_sec - state.last_blink_t > CURSOR_BLINK_PERIOD {
-            state.last_blink_t = time_sec;
-            state.cursor_visible = !state.cursor_visible;
-        }
 
         // Only used if text is not already a RichText
         let font = self.font_family.get_size(self.stylesheet.text_sizes.medium);
@@ -110,6 +102,31 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
             ));
             TrackedContent::new_with_id(formatted, content_id)
         };
+
+        let p = &self.input_state.pointer;
+        let vr = dst_rect;
+
+        if p.left_click_trigger && dst_rect.check_contains_point(p.x, p.y) {
+            let (ox, oy) = state.scroll_offsets;
+            let (x_text, y_text) = (
+                p.x - vr.x0 + ox,
+                p.y - vr.y0 + oy
+            );
+            if let Some(index) = formatted.as_ref().xy_to_index((x_text, y_text)) {
+                state.cursor = index - prelude_len;
+                cursor_changed = true;
+            }
+        }
+
+        if !cursor_enabled {
+            state.cursor_visible = false;
+        } else if cursor_changed {
+            state.last_blink_t = time_sec;
+            state.cursor_visible = true;
+        } else if time_sec - state.last_blink_t > CURSOR_BLINK_PERIOD {
+            state.last_blink_t = time_sec;
+            state.cursor_visible = !state.cursor_visible;
+        }
 
         let formatted_content_id = formatted.get_id();
 
