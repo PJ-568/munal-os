@@ -1,11 +1,19 @@
 # Bugs
 
+
+* !!! crashes on window resizes
+* !!! black border overlaps resize button
+* !!! incorrect cursor pos in text editor
+
 * scrollbars interfere with resize button
 * resize handle "jumps" to cursor when resizing
 * clicks go through scrollbars
 
 
+
 # Cosmetic
+
+* !!! re-do text editor UI
 
 * choose proper style for UI (color, fonts, etc)
 * desktop wallpaper
@@ -20,6 +28,8 @@
 
 
 # Features
+
+* !!! version number + tooltip
 
 * wasm: restart button in window on crash
 * proper hover tooltips for resources topbar
