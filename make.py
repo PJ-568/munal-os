@@ -58,7 +58,7 @@ def _build():
         wasm_bin_path = _build_crate(
             crate_path=f"wasm_apps/{app}/",
             binary_name=f"{app}.wasm",
-            target="wasm32-wasi",
+            target="wasm32-wasip1",
             dep_paths=["applib/", "guestlib/"],
         )
 
