@@ -23,6 +23,8 @@ CRATE_PATHS = [
     *[f"wasm_apps/{app}" for app in WASM_APPS]
 ]
 
+TOOLCHAIN_VERSION = "nightly-2025-06-01-x86_64-unknown-linux-gnu"
+
 
 def main():
 
@@ -33,6 +35,7 @@ def main():
     subparsers.add_parser("fmt")
     subparsers.add_parser("fix")
     subparsers.add_parser("clean")
+    subparsers.add_parser("setup-toolchain")
     args = parser.parse_args()
 
     if args.cmd == "build":
@@ -46,6 +49,8 @@ def main():
         _fix()
     elif args.cmd == "clean":
         _clean()
+    elif args.cmd == "setup-toolchain":
+        _setup_toolchain()
 
 
 def _build():
@@ -109,24 +114,33 @@ def _run():
     )
 
     try:
-        subprocess.check_call(f"qemu-system-x86_64 {qemu_args}", shell=True)
+        _shell_exec(f"qemu-system-x86_64 {qemu_args}")
     except (KeyboardInterrupt, subprocess.CalledProcessError):
         sys.exit(1)
 
 
 def _fmt():
     for crate_path in CRATE_PATHS:
-        subprocess.check_call("cargo fmt", shell=True, cwd=crate_path)
+        _shell_exec("cargo fmt", workdir=crate_path)
 
 
 def _fix():
     for crate_path in CRATE_PATHS:
-        subprocess.check_call("cargo fix --allow-dirty", shell=True, cwd=crate_path)
+        _shell_exec("cargo fix --allow-dirty", workdir=crate_path)
 
 def _clean():
     for crate_path in CRATE_PATHS:
-        subprocess.check_call("cargo clean", shell=True, cwd=crate_path)
+        _shell_exec("cargo clean", workdir=crate_path)
 
+def _setup_toolchain():
+
+    _shell_exec(f"rustup toolchain install {TOOLCHAIN_VERSION}")
+    _shell_exec(f"rustup component add rust-src --toolchain {TOOLCHAIN_VERSION}")
+    _shell_exec(f"rustup target add --toolchain {TOOLCHAIN_VERSION} wasm32-wasip1")
+
+    for crate_path in CRATE_PATHS:
+        with open(Path(crate_path) / "rust-toolchain", "w") as f:
+            f.write(f"{TOOLCHAIN_VERSION}\n")
 
 def _build_crate(
     crate_path,
@@ -158,7 +172,7 @@ def _build_crate(
 
     print(f"Building {binary_path}")
     try:
-        subprocess.check_call(f"cargo build {mode_arg}", cwd=crate_path, shell=True)
+        _shell_exec(f"cargo build {mode_arg}", workdir=crate_path)
     except (KeyboardInterrupt, subprocess.CalledProcessError):
         print("Build failed.")
         sys.exit(1)
@@ -192,6 +206,9 @@ def _copy_if_new(src, dst):
     if not dst.exists() or dst.lstat().st_mtime < src.lstat().st_mtime:
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dst)
+
+def _shell_exec(cmd, workdir=None):
+    subprocess.check_call(cmd, cwd=workdir, shell=True)
 
 
 if __name__ == "__main__":

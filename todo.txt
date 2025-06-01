@@ -4,6 +4,7 @@
 * !!! crashes on window resizes
 * !!! black border overlaps resize button
 * !!! incorrect cursor pos in text editor
+* !!! memory graph scale in audit
 
 * scrollbars interfere with resize button
 * resize handle "jumps" to cursor when resizing
@@ -39,6 +40,8 @@
 
 
 # Meta
+
+* !!! set logging mode to debug
 
 * Readme and architecture doc
 * Demo videos
