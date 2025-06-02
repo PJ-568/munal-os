@@ -3,7 +3,6 @@
 
 * !!! crashes on window resizes
 * !!! black border overlaps resize button
-* !!! incorrect cursor pos in text editor
 * !!! memory graph scale in audit
 
 * scrollbars interfere with resize button
@@ -15,9 +14,9 @@
 # Cosmetic
 
 * !!! re-do text editor UI
-
-* choose proper style for UI (color, fonts, etc)
-* desktop wallpaper
+* !!! pick proper font sizes
+* !!! pick a color palette
+* !!! pick a desktop wallpaper
 
 
 # Refactorings

@@ -248,7 +248,6 @@ struct TextRenderer {
 }
 
 const CURSOR_W: u32 = 2;
-const CURSOR_H: u32 = 20;
 const MIN_TILE_W: u32 = 200;
 const TILE_H: u32 = 200;
 
@@ -271,8 +270,14 @@ impl TileRenderer for TextRenderer {
 
     fn content_id(&self, tile_rect: &Rect) -> ContentId {
 
-        let FormattedRichText { w, h, .. } = *self.formatted.as_ref();
-        let text_rect = Rect { x0: 0, y0: 0, w, h: h + CURSOR_H};
+        let formatted = self.formatted.as_ref();
+        let FormattedRichText { w, h, .. } = *formatted;
+        let cursor_h = formatted.lines
+            .last()
+            .map(|l| l.chars.last()).flatten()
+            .map(|c| c.font.char_h as u32)
+            .unwrap_or(0);
+        let text_rect = Rect { x0: 0, y0: 0, w, h: h + cursor_h};
 
         if tile_rect.intersection(&text_rect).is_none() {
             ContentId::from_hash(&(tile_rect.w, tile_rect.h))
@@ -320,12 +325,13 @@ impl TileRenderer for TextRenderer {
         // Draw blinking cursor
 
         if self.cursor_visible {
-            let (x, y) = self.formatted.as_ref().index_to_xy(self.prelude_len + self.cursor);
+            let index = self.prelude_len + self.cursor;
+            let (x, y, h) = self.formatted.as_ref().index_to_xy(index);
             let cursor_rect = Rect {
                 x0: x - ox,
                 y0: y - oy,
                 w: CURSOR_W,
-                h: 20, // TODO
+                h,
             };
             draw_rect(dst_fb, &cursor_rect, Color::WHITE, false);
         }

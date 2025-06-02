@@ -359,6 +359,7 @@ pub struct FormattedRichLine {
     pub chars: Vec<RichChar>,
     pub w: u32,
     pub h: u32,
+    pub base_y: u32,
     pub x_offset: u32,
 }
 pub struct FormattedRichText {
@@ -371,14 +372,14 @@ pub struct FormattedRichText {
 
 impl FormattedRichText {
 
-    pub fn index_to_xy(&self, index: usize) -> (i64, i64) {
+    pub fn index_to_xy(&self, index: usize) -> (i64, i64, u32) {
 
-        if self.lines.is_empty() { return (0, 0); }
+        if self.lines.is_empty() { return (0, 0, 0); }
 
         // OK because we checked lines was not empty
         let last_line = self.lines.last().unwrap();
 
-        // OK because a single line cannot be empty
+        // OK because a single line cannot be empty (contains at least a \n)
         let last_char = last_line.chars.last().unwrap().c;
 
         let mut i = 0;
@@ -393,19 +394,28 @@ impl FormattedRichText {
                 }
             });
 
-        let get_line_pos = |line_i: usize, line_char_i: usize| -> (u32, u32) {
+        let get_line_pos = |line_i: usize, line_char_i: usize| -> (u32, u32, u32) {
             let line = &self.lines[line_i];
             let x_offset = line.x_offset;
             let left_chars = &line.chars[0..line_char_i];
             let x = left_chars.iter().map(|c| c.font.char_w as u32).sum::<u32>();
             let y = self.lines[..line_i].iter().map(|l| l.h).sum::<u32>();
-            (x + x_offset, y)
+    
+            let ref_char = if line_char_i == 0 { &line.chars[0] } else { &line.chars[line_char_i-1] };
+
+            let char_h = ref_char.font.char_h as u32;
+            let base_y = ref_char.font.base_y as u32;
+
+            let y_offset = line.base_y - base_y;
+
+            (x + x_offset, y + y_offset, char_h)
         };
 
-        let (x, y) = match search_res {
+        let (x, y, h) = match search_res {
 
             Some((line_i, line_char_i)) => get_line_pos(line_i, line_char_i),
 
+            // Cursor at the end of the text, but just after a newline
             None if last_char == '\n' => {
                 let y = self.lines.iter().map(|l| l.h).sum::<u32>();
                 let x = match self.justif {
@@ -413,9 +423,11 @@ impl FormattedRichText {
                     TextJustification::Center => self.w / 2,
                     TextJustification::Right => self.w
                 };
-                (x, y)
+                let line_h = self.lines.last().unwrap().h;
+                (x, y, line_h)
             },
 
+            // Cursor at the end of the text
             None => {
                 let line_i = self.lines.len() - 1;
                 let line_char_i = last_line.chars.len();
@@ -423,7 +435,7 @@ impl FormattedRichText {
             }
         };
 
-        (x as i64, y as i64)
+        (x as i64, y as i64, h)
     }
 
     pub fn xy_to_index(&self, xy: (i64, i64)) -> Option<usize> {
@@ -590,6 +602,7 @@ pub fn format_rich_lines(text: &RichText, max_w: u32, justif: TextJustification)
                     let s = &explicit_line[i1..i2];
                     let line_w = s.iter().map(|rc| rc.width()).sum();
                     let line_h = s.iter().map(|rc| rc.height()).max().unwrap();
+                    let line_base_y = s.iter().map(|rc| rc.font.base_y).max().unwrap();
 
                     let x_offset = match justif {
                         TextJustification::Left => 0,
@@ -601,6 +614,7 @@ pub fn format_rich_lines(text: &RichText, max_w: u32, justif: TextJustification)
                         chars: s.to_vec(),
                         w: line_w,
                         h: line_h,
+                        base_y: line_base_y as u32,
                         x_offset
                     });
 
