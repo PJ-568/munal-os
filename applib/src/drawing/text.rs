@@ -72,6 +72,10 @@ impl FontFamily {
     pub fn get_size(&self, size: u32) -> &Font {
         self.by_size.get(&size).expect("No font available for this size")
     }
+
+    pub fn get_available_sizes(&self) -> impl Iterator<Item = u32> + use <'_> {
+        self.by_size.keys().map(|k| *k)
+    }
 }
 
 pub struct Font {
@@ -105,7 +109,7 @@ lazy_static! {
     ]);
 }
 
-#[derive(Clone, Copy, Hash)]
+#[derive(Clone, Copy, Hash, PartialEq, Debug)]
 pub enum TextJustification { Left, Center, Right }
 
 pub fn draw_line_in_rect<F: FbViewMut>(

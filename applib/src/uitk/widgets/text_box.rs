@@ -333,7 +333,8 @@ impl TileRenderer for TextRenderer {
                 w: CURSOR_W,
                 h,
             };
-            draw_rect(dst_fb, &cursor_rect, Color::WHITE, false);
+            let color = self.formatted.as_ref().get_char(index).color;
+            draw_rect(dst_fb, &cursor_rect, color, false);
         }
     }
 }

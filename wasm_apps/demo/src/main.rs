@@ -1,5 +1,6 @@
 extern crate alloc;
 
+use applib::uitk::layout::{make_horizontal_layout, LayoutItem};
 use lazy_static::lazy_static;
 
 use applib::drawing::primitives::draw_rect;
@@ -9,7 +10,7 @@ use core::cell::OnceCell;
 use guestlib::{PixelData, WasmLogger};
 use applib::Rect;
 use applib::content::TrackedContent;
-use applib::uitk::{self, ButtonConfig, ChoiceButtonsConfig, ChoiceConfig, EditableRichText, TextBoxState, UuidProvider};
+use applib::uitk::{self, ButtonConfig, ButtonIndicatorMode, EditableRichText, TextBoxState, UuidProvider};
 use applib::{Framebuffer, OwnedPixels};
 
 
@@ -27,15 +28,12 @@ struct AppState {
     ui_store: uitk::UiStore,
     uuid_provider: UuidProvider,
 
+    justification: SingleSelection<TextJustification>,
+    font_size: SingleSelection<u32>,
+
     textbox_text: TrackedContent<RichText>,
     textbox_prelude: TrackedContent<RichText>,
     textbox_state: TextBoxState,
-
-    selected_justif: usize,
-    selected_color: usize,
-    selected_size: usize,
-
-    editing_enabled: bool,
 }
 
 static mut APP_STATE: OnceCell<AppState> = OnceCell::new();
@@ -53,18 +51,17 @@ pub fn init() -> () {
 
     let mut uuid_provider = uitk::UuidProvider::new();
 
-    let selected_justif = 0;
-    let selected_color = 0;
-    let selected_size = 0;
+    let justification = SingleSelection(TextJustification::Left);
+    let font_size = SingleSelection(12);
 
     let textbox_state = {
         let mut tb_state = TextBoxState::new();
-        tb_state.justif = get_justif(selected_justif);
+        tb_state.justif = *justification.selected();
         tb_state
     };
 
-    let color = get_color(selected_color);
-    let font = get_font(selected_size);    
+    let color = Color::BLACK;
+    let font = DEFAULT_FONT_FAMILY.get_size(*font_size.selected());    
 
     let textbox_text = {
         let text = RichText::from_str("pouet\ntralala", color, font, None);
@@ -82,14 +79,12 @@ pub fn init() -> () {
         ui_store: uitk::UiStore::new(),
         uuid_provider: UuidProvider::new(),
 
+        justification,
+        font_size,
+
         textbox_text,
         textbox_prelude,
         textbox_state,
-        selected_justif,
-        selected_color,
-        selected_size,
-
-        editing_enabled: true,
     };
     unsafe {
         APP_STATE
@@ -98,8 +93,30 @@ pub fn init() -> () {
     }
 }
 
+struct SingleSelection<T: PartialEq>(T);
+
+impl<T: PartialEq> SingleSelection<T> {
+    fn scope(&mut self, index: T, mut scope_func: impl FnMut(&mut bool)) {
+        let mut state = index == self.0;
+        scope_func(&mut state);
+        if state {
+            self.0 = index;
+        }
+    }
+
+    fn selected(&self) -> &T {
+        &self.0
+    }
+}
+
 #[no_mangle]
 pub fn step() {
+
+    const TOOLBAR_H: u32 = 40;
+    const JUSTIF_BUTTON_W: u32 = 56;
+    const SIZE_BUTTON_W: u32 = 32;
+    const CANVAS_MARGIN: u32 = 20;
+
     let state = unsafe { APP_STATE.get_mut().expect("App not initialized") };
 
     let time = guestlib::get_time();
@@ -118,186 +135,87 @@ pub fn step() {
         time
     );
 
-    draw_rect(
-        uitk_context.fb,
-        &Rect { x0: (w / 2).into(), y0: 0, w: w / 2, h },
-        stylesheet.colors.background,
-        false
-    );
-
-    let mut y = 0;
-    let row_h = 100;
-
-    // Justification
-
-    uitk_context.section(
-        &Rect { x0: (w / 2).into(), y0: y, w: w / 2, h: row_h },
-        "Justification",
-        |context, inner_rect| context.layout_box(
-            inner_rect,
-            0.0, 0.0, 0.4, 0.0,
-            |context, inner_rect|         context.choice_buttons_exclusive(
-                &ChoiceButtonsConfig {
-                    rect: inner_rect.clone(),
-                    choices: vec![
-                        ChoiceConfig {
-                            text: "".to_owned(),
-                            icon: Some(("justif_left_icon".to_owned(), &JUSTIF_LEFT_ICON)),
-                        },
-                        ChoiceConfig {
-                            text: "".to_owned(),
-                            icon: Some(("justif_center_icon".to_owned(), &JUSTIF_CENTER_ICON)),
-                        },
-                        ChoiceConfig {
-                            text: "".to_owned(),
-                            icon: Some(("justif_right_icon".to_owned(), &JUSTIF_RIGHT_ICON)),
-                        },
-                    ],
-                indicator_mode: uitk::ButtonIndicatorMode::Light
-                },
-                &mut state.selected_justif
-            )
-        )
-    );
-
-    state.textbox_state.justif = get_justif(state.selected_justif);
-
-    y += row_h as i64;
-
-    // Color
-
-    uitk_context.section(
-        &Rect { x0: (w / 2).into(), y0: y, w: w / 2, h: row_h },
-        "Color",
-        |context, inner_rect| context.choice_buttons_exclusive(
-            &ChoiceButtonsConfig {
-                rect: inner_rect.clone(),
-                choices: vec![
-                    ChoiceConfig {
-                        text: "White".to_owned(),
-                        ..Default::default()
-                    },
-                    ChoiceConfig {
-                        text: "Blue".to_owned(),
-                        ..Default::default()
-                    },
-                    ChoiceConfig {
-                        text: "Red".to_owned(),
-                        ..Default::default()
-                    },
-                    ChoiceConfig {
-                        text: "Green".to_owned(),
-                        ..Default::default()
-                    },
-                ],
-                indicator_mode: uitk::ButtonIndicatorMode::Border
-            },
-            &mut state.selected_color
-        )
-    );
-
-    let color = get_color(state.selected_color);
-
-    y += row_h as i64;
-
-    // Font
-
-    uitk_context.section(
-        &Rect { x0: (w / 2).into(), y0: y, w: w / 2, h: row_h },
-        "Font",
-        |context, inner_rect| context.choice_buttons_exclusive(
-            &ChoiceButtonsConfig {
-                rect: inner_rect.clone(),
-                choices: vec![
-                    ChoiceConfig {
-                        text: "12".to_owned(),
-                        ..Default::default()
-                    },
-                    ChoiceConfig {
-                        text: "24".to_owned(),
-                        ..Default::default()
-                    },
-                ],
-                indicator_mode: uitk::ButtonIndicatorMode::Border
-            },
-            &mut state.selected_size
-        )
-    );
-
-    let font = get_font(state.selected_size);
-
-    y += row_h as i64;
-
-    let section_rect = Rect { x0: (w / 2).into(), y0: y, w: w / 2, h: row_h };
-
-    uitk_context.section(&section_rect, "Section", |context, inner_rect| {
-        context.button_toggle(
-            &ButtonConfig{
-                rect: inner_rect.clone(),
-                text: "Enable".to_string(),
-                ..Default::default()
-            },
-            &mut state.editing_enabled,
-        );
-    });
-
-
-
-    let text_box_rect = Rect { x0: 0, y0: 0, w: w / 2, h };
-
-    if state.editing_enabled {
-        uitk_context.editable_text_box(
-            &text_box_rect,
-            &mut EditableRichText {
-                color,
-                font,
-                rich_text: &mut state.textbox_text
-            },
-            &mut state.textbox_state,
-            true,
-            true,
-            Some(&state.textbox_prelude)
-        );
-    } else {
-        uitk_context.text_box(
-            &text_box_rect,
-            &state.textbox_text,
-            &mut state.textbox_state,
-            true
-        );
-    }
-
-
-    // uitk_context.text_box(
-    //     &Rect { x0: (w / 2) as i64, y0: 0, w: w / 2, h },
-    //     &state.textbox_text,
-    //     &mut state.textbox_2_state,
-    //     true
-    // );
-}
-
-fn get_justif(selected: usize) -> TextJustification {
-    match selected {
-        0 => TextJustification::Left,
-        1 => TextJustification::Center,
-        _ => TextJustification::Right,
-    }
-}
-
-fn get_color(selected: usize) -> Color {
-    match selected {
-        0 => Color::WHITE,
-        1 => Color::BLUE,
-        _ => Color::RED,
-    }
-}
-
-fn get_font(selected: usize) -> &'static Font {
-    let size = match selected {
-        0 => 12,
-        _ => 24,
+    let toolbar_rect = Rect { x0: 0, y0: 0, w, h: TOOLBAR_H };
+    let canvas_rect = Rect { 
+        x0: CANVAS_MARGIN as i64,
+        y0: (TOOLBAR_H + CANVAS_MARGIN ) as i64,
+        w: w - 2 * CANVAS_MARGIN,
+        h: h - TOOLBAR_H - CANVAS_MARGIN
     };
 
-    DEFAULT_FONT_FAMILY.get_size(size)
+    let available_font_sizes: Vec<u32> = DEFAULT_FONT_FAMILY.get_available_sizes().collect();
+
+    let toolbar_layout_items = {
+        let mut v = vec![
+            LayoutItem::Fixed { size: JUSTIF_BUTTON_W },
+            LayoutItem::Fixed { size: JUSTIF_BUTTON_W },
+            LayoutItem::Fixed { size: JUSTIF_BUTTON_W },
+            LayoutItem::Float,
+        ];
+        for _ in 0..available_font_sizes.len() {
+            v.push(LayoutItem::Fixed { size: SIZE_BUTTON_W });
+        }
+        v
+    };
+
+    let toolbar_layout = make_horizontal_layout(
+        &toolbar_rect.offset(-(stylesheet.margin as i64)),
+        stylesheet.margin,
+        &toolbar_layout_items
+    );
+
+    let mut button_config = ButtonConfig {
+        indicator_mode: ButtonIndicatorMode::Light,
+        ..Default::default()
+    };
+
+    //
+    // Justification
+
+    state.justification.scope(TextJustification::Left, |button_state| {
+        button_config.rect = toolbar_layout[0].clone();
+        button_config.icon = Some(("justif_left_icon".to_owned(), &JUSTIF_LEFT_ICON));
+        uitk_context.button_toggle_once(&button_config, button_state);
+    });
+
+    state.justification.scope(TextJustification::Center, |button_state| {
+        button_config.rect = toolbar_layout[1].clone();
+        button_config.icon = Some(("justif_center_icon".to_owned(), &JUSTIF_CENTER_ICON));
+        uitk_context.button_toggle_once(&button_config, button_state);
+    });
+
+    state.justification.scope(TextJustification::Right, |button_state| {
+        button_config.rect = toolbar_layout[2].clone();
+        button_config.icon = Some(("justif_right_icon".to_owned(), &JUSTIF_RIGHT_ICON));
+        uitk_context.button_toggle_once(&button_config, button_state);
+    });
+
+    button_config.icon = None;
+    button_config.indicator_mode = ButtonIndicatorMode::Border;
+
+    //
+    // Font size
+
+    for (i, size) in DEFAULT_FONT_FAMILY.get_available_sizes().enumerate() {
+        state.font_size.scope(size, |button_state| {
+            button_config.rect = toolbar_layout[4 + i].clone();
+            button_config.text = format!("{}", size);
+            uitk_context.button_toggle_once(&button_config, button_state);
+        });
+    }
+
+    state.textbox_state.justif = *state.justification.selected();
+    uitk_context.style(|s| s.colors.editable = Color::WHITE).editable_text_box(
+        &canvas_rect,
+        &mut EditableRichText {
+            color: Color::BLACK,
+            font: DEFAULT_FONT_FAMILY.get_size(*state.font_size.selected()),
+            rich_text: &mut state.textbox_text
+        },
+        &mut state.textbox_state,
+        true,
+        true,
+        Some(&state.textbox_prelude)
+    );
 }
 

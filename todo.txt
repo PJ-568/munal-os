@@ -29,6 +29,7 @@
 
 # Features
 
+* !!! shadow cursor in text editing
 * !!! version number + tooltip
 
 * wasm: restart button in window on crash
@@ -41,6 +42,7 @@
 # Meta
 
 * !!! set logging mode to debug
+* !! cleanup imports & formatting
 
 * Readme and architecture doc
 * Demo videos

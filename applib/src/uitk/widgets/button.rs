@@ -9,22 +9,27 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
 
     pub fn button(&mut self, config: &ButtonConfig) -> bool {
         let mut active = false;
-        self.button_inner(config, &mut active);
+        self.button_inner(config, &mut active, false);
         active
     }
 
     pub fn button_toggle(&mut self, config: &ButtonConfig, active: &mut bool) {
-        self.button_inner(config, active);
+        self.button_inner(config, active, false);
     }
 
-    fn button_inner(&mut self, config: &ButtonConfig, active: &mut bool) {
+    pub fn button_toggle_once(&mut self, config: &ButtonConfig, active: &mut bool) {
+        self.button_inner(config, active, true);
+    }
+
+    fn button_inner(&mut self, config: &ButtonConfig, active: &mut bool, toggle_once: bool) {
 
         let UiContext {
             fb, input_state, stylesheet, font_family, tile_cache, ..
         } = self;
 
         let ps = &input_state.pointer;
-        let hovered = !config.freeze && config.rect.check_contains_point(ps.x, ps.y);
+        let hovered = config.rect.check_contains_point(ps.x, ps.y)
+            && !(*active && toggle_once);
         let clicked = hovered && ps.left_click_trigger;
 
         let state = {
@@ -193,7 +198,7 @@ pub struct ButtonConfig {
     pub rect: Rect,
     pub text: String,
     pub icon: Option<(String, &'static Framebuffer<OwnedPixels>)>,
-    pub freeze: bool,
+    pub untoggle: bool,
     pub indicator_mode: ButtonIndicatorMode,
 }
 
@@ -208,7 +213,7 @@ impl Default for ButtonConfig {
             },
             text: "".to_owned(),
             icon: None,
-            freeze: false,
+            untoggle: true,
             indicator_mode: ButtonIndicatorMode::Off
         }
     }
