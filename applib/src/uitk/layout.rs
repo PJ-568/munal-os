@@ -61,6 +61,56 @@ pub fn make_vertical_layout(rect: &Rect, margin: u32, items: &[LayoutItem]) -> V
     layout_rects
 }
 
+pub fn make_grid_layout(rect: &Rect, margin: u32, nx: usize, ny: usize) -> Vec<Rect> {
+
+    let x_partition = partition(rect.w, margin, nx);
+    let y_partition = partition(rect.h, margin, ny);
+
+    let mut v = Vec::new();
+
+    for (y1, y2) in y_partition.iter() {
+        for (x1, x2) in x_partition.iter() {
+            v.push(Rect::from_xyxy([
+                rect.x0 + x1,
+                rect.y0 + y1,
+                rect.x0 + x2,
+                rect.y0 + y2,  
+            ]));
+        }
+    }
+
+    v
+}
+
+fn partition(total: u32, margin: u32, n: usize) -> Vec<(i64, i64)> {
+    
+    assert_ne!(n, 0);
+    assert_ne!(total, 0);
+
+    let total = total as f32;
+    let margin = margin as f32;
+    let n_f = n as f32;
+
+    let elem_w = (total - (n_f - 1.0) * margin) / n_f;
+
+    let mut v = Vec::new();
+    let mut x1 = 0.0;
+    for i in 0..n {
+
+        let x2 = x1 + elem_w;
+        v.push((
+            f32::round(x1) as i64,
+            f32::round(x2) as i64 - 1,
+        ));
+
+        x1 += elem_w;
+        if i != n - 1 {
+            x1 += margin;
+        }
+    }
+
+    v
+}
 
 #[derive(Clone, Copy, PartialEq)]
 pub enum LayoutItem {

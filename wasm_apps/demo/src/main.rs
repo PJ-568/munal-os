@@ -1,7 +1,6 @@
 extern crate alloc;
 
-use alloc::collections::BTreeMap;
-use applib::uitk::layout::{make_horizontal_layout, LayoutItem};
+use applib::uitk::layout::{make_grid_layout, make_horizontal_layout, LayoutItem};
 use lazy_static::lazy_static;
 
 use applib::drawing::primitives::draw_rect;
@@ -14,10 +13,14 @@ use applib::content::TrackedContent;
 use applib::uitk::{self, ButtonConfig, ButtonIndicatorMode, EditableRichText, TextBoxState, UuidProvider};
 use applib::{Framebuffer, OwnedPixels};
 
-const AVAILABLE_TEXT_COLORS: [Color; 3] = [
+const AVAILABLE_TEXT_COLORS: [Color; 7] = [
     Color::BLUE,
     Color::WHITE,
     Color::RED,
+    Color::BLACK,
+    Color::GREEN,
+    Color::YELLOW,
+    Color::FUCHSIA,
 ];
 
 lazy_static! {
@@ -29,7 +32,7 @@ lazy_static! {
         Framebuffer::from_png(include_bytes!("../icons/justif_right.png"));
 
     pub static ref COLOR_ICONS: Vec<(Color, Framebuffer<OwnedPixels>)> = AVAILABLE_TEXT_COLORS.iter()
-    .map(|&color| (color, Framebuffer::new_owned_filled(20, 20, color)))
+    .map(|&color| (color, Framebuffer::new_owned_filled(15, 10, color)))
     .collect();
 }
 
@@ -125,8 +128,6 @@ impl<T: PartialEq> SingleSelection<T> {
 pub fn step() {
 
     const TOOLBAR_H: u32 = 40;
-    const JUSTIF_BUTTON_W: u32 = 56;
-    const DEFAULT_BUTTON_W: u32 = 32;
     const CANVAS_MARGIN: u32 = 20;
 
     let state = unsafe { APP_STATE.get_mut().expect("App not initialized") };
@@ -155,35 +156,10 @@ pub fn step() {
         h: h - TOOLBAR_H - CANVAS_MARGIN
     };
 
-    let available_font_sizes: Vec<u32> = DEFAULT_FONT_FAMILY.get_available_sizes().collect();
-
-    let toolbar_layout_items = {
-
-        let mut v = Vec::new();
-
-        for _ in 0..3 {
-            v.push(LayoutItem::Fixed { size: JUSTIF_BUTTON_W });
-        }
-
-        v.push(LayoutItem::Float);
-
-        for _ in 0..AVAILABLE_TEXT_COLORS.len() {
-            v.push(LayoutItem::Fixed { size: DEFAULT_BUTTON_W });
-        }
-
-        v.push(LayoutItem::Float);
-
-        for _ in 0..available_font_sizes.len() {
-            v.push(LayoutItem::Fixed { size: DEFAULT_BUTTON_W });
-        }
-
-        v
-    };
-
     let toolbar_layout = make_horizontal_layout(
         &toolbar_rect.offset(-(stylesheet.margin as i64)),
         stylesheet.margin,
-        &toolbar_layout_items
+        &[LayoutItem::Float; 5]
     );
 
     let mut button_config = ButtonConfig {
@@ -191,54 +167,69 @@ pub fn step() {
         ..Default::default()
     };
 
-    let mut layout_offset = 0;
-
     //
     // Justification
 
+    let justif_layout = make_horizontal_layout(
+        &toolbar_layout[0],
+        stylesheet.margin,
+        &[LayoutItem::Float; 3]
+    );
+
     state.justification.scope(TextJustification::Left, |button_state| {
-        button_config.rect = toolbar_layout[layout_offset].clone();
+        button_config.rect = justif_layout[0].clone();
         button_config.icon = Some(("justif_left_icon".to_owned(), &JUSTIF_LEFT_ICON));
         uitk_context.button_toggle_once(&button_config, button_state);
     });
 
     state.justification.scope(TextJustification::Center, |button_state| {
-        button_config.rect = toolbar_layout[layout_offset + 1].clone();
+        button_config.rect = justif_layout[1].clone();
         button_config.icon = Some(("justif_center_icon".to_owned(), &JUSTIF_CENTER_ICON));
         uitk_context.button_toggle_once(&button_config, button_state);
     });
 
     state.justification.scope(TextJustification::Right, |button_state| {
-        button_config.rect = toolbar_layout[layout_offset + 2].clone();
+        button_config.rect = justif_layout[2].clone();
         button_config.icon = Some(("justif_right_icon".to_owned(), &JUSTIF_RIGHT_ICON));
         uitk_context.button_toggle_once(&button_config, button_state);
     });
 
-    layout_offset += 4;
     button_config.indicator_mode = ButtonIndicatorMode::Border;
 
     //
     // Text color
 
+    let color_layout = make_grid_layout(
+        &toolbar_layout[2],
+        stylesheet.margin,
+        5, 2
+    );
+
     for (i, (color, icon)) in COLOR_ICONS.iter().enumerate() {
         state.text_color.scope(*color, |button_state| {
             let icon_key = format!("{:?}", color);
-            button_config.rect = toolbar_layout[layout_offset + i].clone();
+            button_config.rect = color_layout[i].clone();
             button_config.icon = Some((icon_key, icon));
             uitk_context.button_toggle_once(&button_config, button_state);
         });
     }
-
-    layout_offset += COLOR_ICONS.len() + 1;
 
     //
     // Font size
 
     button_config.icon = None;
 
-    for (i, size) in DEFAULT_FONT_FAMILY.get_available_sizes().enumerate() {
+    let available_sizes: Vec<u32> = DEFAULT_FONT_FAMILY.get_available_sizes().collect();
+
+    let sizes_layout = make_horizontal_layout(
+        &toolbar_layout[4],
+        stylesheet.margin,
+        &vec![LayoutItem::Float; available_sizes.len()]
+    );
+
+    for (i, &size) in available_sizes.iter().enumerate() {
         state.font_size.scope(size, |button_state| {
-            button_config.rect = toolbar_layout[layout_offset + i].clone();
+            button_config.rect = sizes_layout[i].clone();
             button_config.text = format!("{}", size);
             uitk_context.button_toggle_once(&button_config, button_state);
         });
