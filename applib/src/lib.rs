@@ -20,7 +20,7 @@ use input::InputState;
 
 pub use stylesheet::{StyleSheet, StyleSheetColors, TextSizes};
 
-#[derive(Clone, Copy, Hash, Debug)]
+#[derive(Clone, Copy, Hash, Debug, PartialEq)]
 #[repr(transparent)]
 pub struct Color(pub [u8; 4]);
 
@@ -384,8 +384,13 @@ impl<'a> Framebuffer<BorrowedPixels<'a>> {
 }
 
 impl Framebuffer<OwnedPixels> {
+
     pub fn new_owned(w: u32, h: u32) -> Self {
-        let data = vec![Color([0u8; 4]); (w * h) as usize];
+        Self::new_owned_filled(w, h, Color::ZERO)
+    }
+
+    pub fn new_owned_filled(w: u32, h: u32, color: Color) -> Self {
+        let data = vec![color; (w * h) as usize];
         let rect = Rect { x0: 0, y0: 0, w, h };
         Framebuffer {
             data: OwnedPixels(data),

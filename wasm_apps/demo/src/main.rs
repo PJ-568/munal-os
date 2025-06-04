@@ -1,5 +1,6 @@
 extern crate alloc;
 
+use alloc::collections::BTreeMap;
 use applib::uitk::layout::{make_horizontal_layout, LayoutItem};
 use lazy_static::lazy_static;
 
@@ -13,6 +14,11 @@ use applib::content::TrackedContent;
 use applib::uitk::{self, ButtonConfig, ButtonIndicatorMode, EditableRichText, TextBoxState, UuidProvider};
 use applib::{Framebuffer, OwnedPixels};
 
+const AVAILABLE_TEXT_COLORS: [Color; 3] = [
+    Color::BLUE,
+    Color::WHITE,
+    Color::RED,
+];
 
 lazy_static! {
     pub static ref JUSTIF_LEFT_ICON: Framebuffer<OwnedPixels> = 
@@ -21,6 +27,10 @@ lazy_static! {
         Framebuffer::from_png(include_bytes!("../icons/justif_center.png"));
     pub static ref JUSTIF_RIGHT_ICON: Framebuffer<OwnedPixels> = 
         Framebuffer::from_png(include_bytes!("../icons/justif_right.png"));
+
+    pub static ref COLOR_ICONS: Vec<(Color, Framebuffer<OwnedPixels>)> = AVAILABLE_TEXT_COLORS.iter()
+    .map(|&color| (color, Framebuffer::new_owned_filled(20, 20, color)))
+    .collect();
 }
 
 struct AppState {
@@ -30,6 +40,7 @@ struct AppState {
 
     justification: SingleSelection<TextJustification>,
     font_size: SingleSelection<u32>,
+    text_color: SingleSelection<Color>,
 
     textbox_text: TrackedContent<RichText>,
     textbox_prelude: TrackedContent<RichText>,
@@ -53,6 +64,7 @@ pub fn init() -> () {
 
     let justification = SingleSelection(TextJustification::Left);
     let font_size = SingleSelection(12);
+    let text_color = SingleSelection(Color::BLACK);
 
     let textbox_state = {
         let mut tb_state = TextBoxState::new();
@@ -60,16 +72,15 @@ pub fn init() -> () {
         tb_state
     };
 
-    let color = Color::BLACK;
     let font = DEFAULT_FONT_FAMILY.get_size(*font_size.selected());    
 
     let textbox_text = {
-        let text = RichText::from_str("pouet\ntralala", color, font, None);
+        let text = RichText::from_str("pouet\ntralala", *text_color.selected(), font, None);
         TrackedContent::new(text, &mut uuid_provider)
     };
 
     let textbox_prelude = {
-        let text = RichText::from_str("Write text here >>>", color, font, None);
+        let text = RichText::from_str("Write text here >>>", *text_color.selected(), font, None);
         TrackedContent::new(text, &mut uuid_provider)
     };
 
@@ -81,6 +92,7 @@ pub fn init() -> () {
 
         justification,
         font_size,
+        text_color,
 
         textbox_text,
         textbox_prelude,
@@ -114,7 +126,7 @@ pub fn step() {
 
     const TOOLBAR_H: u32 = 40;
     const JUSTIF_BUTTON_W: u32 = 56;
-    const SIZE_BUTTON_W: u32 = 32;
+    const DEFAULT_BUTTON_W: u32 = 32;
     const CANVAS_MARGIN: u32 = 20;
 
     let state = unsafe { APP_STATE.get_mut().expect("App not initialized") };
@@ -146,15 +158,25 @@ pub fn step() {
     let available_font_sizes: Vec<u32> = DEFAULT_FONT_FAMILY.get_available_sizes().collect();
 
     let toolbar_layout_items = {
-        let mut v = vec![
-            LayoutItem::Fixed { size: JUSTIF_BUTTON_W },
-            LayoutItem::Fixed { size: JUSTIF_BUTTON_W },
-            LayoutItem::Fixed { size: JUSTIF_BUTTON_W },
-            LayoutItem::Float,
-        ];
-        for _ in 0..available_font_sizes.len() {
-            v.push(LayoutItem::Fixed { size: SIZE_BUTTON_W });
+
+        let mut v = Vec::new();
+
+        for _ in 0..3 {
+            v.push(LayoutItem::Fixed { size: JUSTIF_BUTTON_W });
         }
+
+        v.push(LayoutItem::Float);
+
+        for _ in 0..AVAILABLE_TEXT_COLORS.len() {
+            v.push(LayoutItem::Fixed { size: DEFAULT_BUTTON_W });
+        }
+
+        v.push(LayoutItem::Float);
+
+        for _ in 0..available_font_sizes.len() {
+            v.push(LayoutItem::Fixed { size: DEFAULT_BUTTON_W });
+        }
+
         v
     };
 
@@ -169,36 +191,54 @@ pub fn step() {
         ..Default::default()
     };
 
+    let mut layout_offset = 0;
+
     //
     // Justification
 
     state.justification.scope(TextJustification::Left, |button_state| {
-        button_config.rect = toolbar_layout[0].clone();
+        button_config.rect = toolbar_layout[layout_offset].clone();
         button_config.icon = Some(("justif_left_icon".to_owned(), &JUSTIF_LEFT_ICON));
         uitk_context.button_toggle_once(&button_config, button_state);
     });
 
     state.justification.scope(TextJustification::Center, |button_state| {
-        button_config.rect = toolbar_layout[1].clone();
+        button_config.rect = toolbar_layout[layout_offset + 1].clone();
         button_config.icon = Some(("justif_center_icon".to_owned(), &JUSTIF_CENTER_ICON));
         uitk_context.button_toggle_once(&button_config, button_state);
     });
 
     state.justification.scope(TextJustification::Right, |button_state| {
-        button_config.rect = toolbar_layout[2].clone();
+        button_config.rect = toolbar_layout[layout_offset + 2].clone();
         button_config.icon = Some(("justif_right_icon".to_owned(), &JUSTIF_RIGHT_ICON));
         uitk_context.button_toggle_once(&button_config, button_state);
     });
 
-    button_config.icon = None;
+    layout_offset += 4;
     button_config.indicator_mode = ButtonIndicatorMode::Border;
+
+    //
+    // Text color
+
+    for (i, (color, icon)) in COLOR_ICONS.iter().enumerate() {
+        state.text_color.scope(*color, |button_state| {
+            let icon_key = format!("{:?}", color);
+            button_config.rect = toolbar_layout[layout_offset + i].clone();
+            button_config.icon = Some((icon_key, icon));
+            uitk_context.button_toggle_once(&button_config, button_state);
+        });
+    }
+
+    layout_offset += COLOR_ICONS.len() + 1;
 
     //
     // Font size
 
+    button_config.icon = None;
+
     for (i, size) in DEFAULT_FONT_FAMILY.get_available_sizes().enumerate() {
         state.font_size.scope(size, |button_state| {
-            button_config.rect = toolbar_layout[4 + i].clone();
+            button_config.rect = toolbar_layout[layout_offset + i].clone();
             button_config.text = format!("{}", size);
             uitk_context.button_toggle_once(&button_config, button_state);
         });
@@ -208,7 +248,7 @@ pub fn step() {
     uitk_context.style(|s| s.colors.editable = Color::WHITE).editable_text_box(
         &canvas_rect,
         &mut EditableRichText {
-            color: Color::BLACK,
+            color: *state.text_color.selected(),
             font: DEFAULT_FONT_FAMILY.get_size(*state.font_size.selected()),
             rich_text: &mut state.textbox_text
         },
