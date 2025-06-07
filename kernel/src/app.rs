@@ -351,7 +351,11 @@ pub fn run_apps<F: FbViewMut>(
 
         AppsInteractionState::PieDesktopMenu { anchor } => {
 
-            let entries: Vec<PieMenuEntry> = apps_manager.z_ordered.iter()
+            // Sorting apps by name to ensure consistent order
+            let mut sorted_apps: Vec<&mut App> = apps_manager.z_ordered.iter_mut().collect();
+            sorted_apps.sort_by_key(|app| app.descriptor.name);
+
+            let entries: Vec<PieMenuEntry> = sorted_apps.iter()
                 .map(|app| PieMenuEntry::Button {
                     icon: app.descriptor.icon,
                     color: stylesheet.colors.background,
@@ -582,7 +586,7 @@ fn app_audit_window<F: FbViewMut>(
         AuditGraph {
             title: "Memory usage",
             subtitle: &format!("{:.0}MB - {:.1}% of system", mem_avg / 1_000_000.0, mem_frac * 100.0),
-            max_val: 10_000_000.0,
+            max_val: 100_000_000.0,
             series: &[
                 uitk::GraphSeries {
                     agg_mode: uitk::GraphAggMode::MAX,
