@@ -89,26 +89,25 @@ pub struct Font {
     pub base_y: usize,
 }
 
+macro_rules! font_data {
+    ($name: expr, $($sizes:tt)*) => {
+        FontFamily::from_font_data($name, &[$(
+            FontData {
+                bitmap_png_bytes: include_bytes!(concat!(
+                    "../../fonts/", $name, "/", $sizes, "/bitmap.png"
+                )),
+                spec_json_bytes: include_bytes!(concat!(
+                    "../../fonts/", $name, "/", $sizes, "/spec.json"
+                )),
+            },
+        )*])
+    };
+}
+
 lazy_static! {
     pub static ref FONT_FAMILIES: BTreeMap<&'static str, FontFamily> = [
-        FontFamily::from_font_data("noto-sans-mono", &[
-            FontData {
-                bitmap_png_bytes: include_bytes!("../../fonts/noto-sans-mono/24/bitmap.png"),
-                spec_json_bytes: include_bytes!("../../fonts/noto-sans-mono/24/spec.json")
-            },
-            FontData {
-                bitmap_png_bytes: include_bytes!("../../fonts/noto-sans-mono/20/bitmap.png"),
-                spec_json_bytes: include_bytes!("../../fonts/noto-sans-mono/20/spec.json")
-            },
-            FontData {
-                bitmap_png_bytes: include_bytes!("../../fonts/noto-sans-mono/18/bitmap.png"),
-                spec_json_bytes: include_bytes!("../../fonts/noto-sans-mono/18/spec.json")
-            },
-            FontData {
-                bitmap_png_bytes: include_bytes!("../../fonts/noto-sans-mono/12/bitmap.png"),
-                spec_json_bytes: include_bytes!("../../fonts/noto-sans-mono/12/spec.json")
-            },
-        ])
+        font_data!("noto-sans-mono", 12 18 24),
+        font_data!("xanmono", 12 18 24),
     ]
     .into_iter().map(|family| (family.name, family)).collect();
 }

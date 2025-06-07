@@ -1,11 +1,11 @@
 extern crate alloc;
 
-use applib::uitk::layout::{make_grid_layout, make_horizontal_layout, LayoutItem};
+use applib::uitk::layout::{make_grid_layout, make_horizontal_layout, make_vertical_layout, LayoutItem};
 use lazy_static::lazy_static;
 
 use applib::drawing::primitives::draw_rect;
 use applib::drawing::text::{Font, RichText, TextJustification, FONT_FAMILIES};
-use applib::Color;
+use applib::{Color, StyleSheetText};
 use core::cell::OnceCell;
 use guestlib::{PixelData, WasmLogger};
 use applib::Rect;
@@ -23,7 +23,8 @@ const AVAILABLE_TEXT_COLORS: [Color; 7] = [
     Color::FUCHSIA,
 ];
 
-const TEXT_FONT_FAMILY: &str = "noto-sans-mono";
+const DEFAULT_FONT_FAMILY: &str = "xanmono";
+const DEFAULT_TEXT_SIZE: u32 = 18;
 
 lazy_static! {
     pub static ref JUSTIF_LEFT_ICON: Framebuffer<OwnedPixels> = 
@@ -44,6 +45,7 @@ struct AppState {
     uuid_provider: UuidProvider,
 
     justification: SingleSelection<TextJustification>,
+    font_family: SingleSelection<String>,
     font_size: SingleSelection<u32>,
     text_color: SingleSelection<Color>,
 
@@ -68,7 +70,8 @@ pub fn init() -> () {
     let mut uuid_provider = uitk::UuidProvider::new();
 
     let justification = SingleSelection(TextJustification::Left);
-    let font_size = SingleSelection(12);
+    let font_family_name = SingleSelection(DEFAULT_FONT_FAMILY.to_owned());
+    let font_size = SingleSelection(DEFAULT_TEXT_SIZE);
     let text_color = SingleSelection(Color::BLACK);
 
     let textbox_state = {
@@ -77,7 +80,9 @@ pub fn init() -> () {
         tb_state
     };
 
-    let font_family = FONT_FAMILIES.get(TEXT_FONT_FAMILY).expect("Unknown font family");
+    let font_family = FONT_FAMILIES
+        .get(font_family_name.selected().as_str())
+        .expect("Unknown font family");
 
     let font = font_family.get_size(*font_size.selected());    
 
@@ -98,6 +103,7 @@ pub fn init() -> () {
         uuid_provider: UuidProvider::new(),
 
         justification,
+        font_family: font_family_name,
         font_size,
         text_color,
 
@@ -163,7 +169,7 @@ pub fn step() {
     let toolbar_layout = make_horizontal_layout(
         &toolbar_rect.offset(-(stylesheet.margin as i64)),
         stylesheet.margin,
-        &[LayoutItem::Float; 5]
+        &[LayoutItem::Float; 7]
     );
 
     let mut button_config = ButtonConfig {
@@ -171,7 +177,9 @@ pub fn step() {
         ..Default::default()
     };
 
-    let font_family = FONT_FAMILIES.get(TEXT_FONT_FAMILY).expect("Unknown font family");
+    let font_family = FONT_FAMILIES
+        .get(state.font_family.selected().as_str())
+        .expect("Unknown font family");
 
     //
     // Justification
@@ -238,6 +246,26 @@ pub fn step() {
             button_config.rect = sizes_layout[i].clone();
             button_config.text = format!("{}", size);
             uitk_context.button_toggle_once(&button_config, button_state);
+        });
+    }
+
+    // Font family
+
+    let available_families: Vec<&str> = FONT_FAMILIES.keys().map(|s| *s).collect();
+
+    let families_layout = make_vertical_layout(
+        &toolbar_layout[6],
+        stylesheet.margin,
+        &vec![LayoutItem::Float; available_families.len()]
+    );
+
+    for (i, &family) in available_families.iter().enumerate() {
+        state.font_family.scope(family.to_owned(), |button_state| {
+            button_config.rect = families_layout[i].clone();
+            button_config.text = family.to_owned();
+            uitk_context
+                .style(|ss| ss.text = StyleSheetText::new(family, ss.text.sizes.clone()))
+                .button_toggle_once(&button_config, button_state);
         });
     }
 
