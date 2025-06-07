@@ -193,7 +193,7 @@ fn parse_hexcolor(hex_str: &str) -> Color {
 
 fn get_inline_block_contents(html_tree: &Tree<HtmlNode>, html_id: NodeId) -> RichText {
 
-    const TEXT_FONT_FAMILY: &str = "noto-sans-mono";
+    const TEXT_FONT_FAMILY: &str = "NotoSansMono";
     const TEXT_SIZE: u32 = 12;
     const TEXT_COLOR: Color = Color::BLACK;
 

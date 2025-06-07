@@ -177,6 +177,11 @@ fn draw_half_triangle<F: FbViewMut>(
 }
 
 pub fn draw_rect<F: FbViewMut>(fb: &mut F, rect: &Rect, color: Color, blend: bool) {
+
+    if rect.w == 0 || rect.h == 0 {
+        return;
+    }
+
     let (fb_w, fb_h) = fb.shape();
     let rect = rect.intersection(&Rect {
         x0: 0,
