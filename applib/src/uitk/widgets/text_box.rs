@@ -284,13 +284,18 @@ impl TileRenderer for TextRenderer {
         let text_rect = Rect { x0: 0, y0: 0, w, h: h + cursor_h};
 
         if tile_rect.intersection(&text_rect).is_none() {
-            ContentId::from_hash(&(tile_rect.w, tile_rect.h))
+            ContentId::from_hash(&(
+                tile_rect.w,
+                tile_rect.h,
+                self.bg_color,
+            ))
         } else {
             ContentId::from_hash(&(
                 tile_rect,
                 self.formatted.get_id(),
                 self.cursor,
                 self.cursor_visible,
+                self.bg_color,
             ))
         }
     }
@@ -337,8 +342,8 @@ impl TileRenderer for TextRenderer {
                 w: CURSOR_W,
                 h,
             };
-            let color = self.formatted.as_ref().get_char(index).color;
-            draw_rect(dst_fb, &cursor_rect, color, false);
+            let cursor_color = self.bg_color.invert();
+            draw_rect(dst_fb, &cursor_rect, cursor_color, false);
         }
     }
 }

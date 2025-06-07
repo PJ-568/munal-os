@@ -18,6 +18,7 @@
 * !!! pick proper font sizes
 * !!! pick a color palette
 * !!! pick a desktop wallpaper
+* !!! welcome texts in text editor & web browser
 
 
 # Refactorings

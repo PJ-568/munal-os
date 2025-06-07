@@ -51,6 +51,11 @@ impl Color {
         let Color([r, g, b, a]) = *self;
         (r, g, b, a)
     }
+
+    pub fn invert(&self) -> Self {
+        let Color([r, g, b, a]) = *self;
+        Color::rgba(255 - r, 255 - g, 255 - b, a)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Hash)]

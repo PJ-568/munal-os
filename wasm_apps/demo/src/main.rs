@@ -7,6 +7,7 @@ use applib::drawing::primitives::draw_rect;
 use applib::drawing::text::{Font, RichText, TextJustification, FONT_FAMILIES};
 use applib::{Color, StyleSheetText};
 use core::cell::OnceCell;
+use std::vec;
 use guestlib::{PixelData, WasmLogger};
 use applib::Rect;
 use applib::content::TrackedContent;
@@ -35,7 +36,7 @@ lazy_static! {
         Framebuffer::from_png(include_bytes!("../icons/justif_right.png"));
 
     pub static ref COLOR_ICONS: Vec<(Color, Framebuffer<OwnedPixels>)> = AVAILABLE_TEXT_COLORS.iter()
-    .map(|&color| (color, Framebuffer::new_owned_filled(15, 10, color)))
+    .map(|&color| (color, Framebuffer::new_owned_filled(20, 15, color)))
     .collect();
 }
 
@@ -48,6 +49,7 @@ struct AppState {
     font_family: SingleSelection<String>,
     font_size: SingleSelection<u32>,
     text_color: SingleSelection<Color>,
+    bg_color: SingleSelection<Color>,
 
     textbox_text: TrackedContent<RichText>,
     textbox_prelude: TrackedContent<RichText>,
@@ -73,6 +75,7 @@ pub fn init() -> () {
     let font_family_name = SingleSelection(DEFAULT_FONT_FAMILY.to_owned());
     let font_size = SingleSelection(DEFAULT_TEXT_SIZE);
     let text_color = SingleSelection(Color::BLACK);
+    let bg_color = SingleSelection(Color::WHITE);
 
     let textbox_state = {
         let mut tb_state = TextBoxState::new();
@@ -106,6 +109,7 @@ pub fn init() -> () {
         font_family: font_family_name,
         font_size,
         text_color,
+        bg_color,
 
         textbox_text,
         textbox_prelude,
@@ -137,15 +141,15 @@ impl<T: PartialEq> SingleSelection<T> {
 #[no_mangle]
 pub fn step() {
 
-    const TOOLBAR_H: u32 = 40;
-    const CANVAS_MARGIN: u32 = 20;
+    const BUTTON_H: u32 = 30;
+    const SIZE_SELECTION_H: u32 = 50;
 
     let state = unsafe { APP_STATE.get_mut().expect("App not initialized") };
 
     let time = guestlib::get_time();
     let stylesheet = guestlib::get_stylesheet();
     let input_state = guestlib::get_input_state();
-    let Rect { w, h, ..} = guestlib::get_win_rect();
+    let win_rect = guestlib::get_win_rect().zero_origin();
 
 
     let mut framebuffer = state.pixel_data.get_framebuffer();
@@ -158,19 +162,67 @@ pub fn step() {
         time
     );
 
-    let toolbar_rect = Rect { x0: 0, y0: 0, w, h: TOOLBAR_H };
-    let canvas_rect = Rect { 
-        x0: CANVAS_MARGIN as i64,
-        y0: (TOOLBAR_H + CANVAS_MARGIN ) as i64,
-        w: w - 2 * CANVAS_MARGIN,
-        h: h - TOOLBAR_H - CANVAS_MARGIN
-    };
+    let available_families: Vec<&str> = FONT_FAMILIES.keys().map(|s| *s).collect();
+    let n_families = available_families.len();
+    let available_sizes: Vec<u32> = vec![12, 18, 20, 24];
+    let m = stylesheet.margin;
 
-    let toolbar_layout = make_horizontal_layout(
-        &toolbar_rect.offset(-(stylesheet.margin as i64)),
-        stylesheet.margin,
-        &[LayoutItem::Float; 7]
+    let columns_layout = make_horizontal_layout(
+        &win_rect.offset(-(m as i64)), stylesheet.margin,
+        &[
+            LayoutItem::Float,
+            LayoutItem::Fixed { size: 140 },
+        ]
     );
+
+    let right_col_layout = make_vertical_layout(
+        &columns_layout.last().unwrap(), stylesheet.margin,
+        &[
+            vec![
+                LayoutItem::Fixed { size: BUTTON_H },
+                LayoutItem::Float,
+            ],
+            vec![LayoutItem::Fixed { size: BUTTON_H }; n_families],
+            vec![
+                LayoutItem::Fixed { size: SIZE_SELECTION_H },
+                LayoutItem::Float,
+            ],
+            vec![
+                LayoutItem::Fixed { size: SIZE_SELECTION_H },
+                LayoutItem::Float,
+                LayoutItem::Fixed { size: SIZE_SELECTION_H },
+            ]
+        ].concat()
+    );
+
+    let justif_layout = make_horizontal_layout(
+        &right_col_layout[0],
+        stylesheet.margin,
+        &[LayoutItem::Float; 3]
+    );
+
+    let colors_layout = make_grid_layout(
+        &right_col_layout[n_families + 4],
+        stylesheet.margin,
+        5, 2
+    );
+
+    let sizes_layout = make_grid_layout(
+        &right_col_layout[n_families + 2], stylesheet.margin,
+        3, 2
+    );
+
+    draw_rect(uitk_context.fb, &right_col_layout[1], stylesheet.colors.element, false);
+    draw_rect(uitk_context.fb, &right_col_layout[n_families + 3], stylesheet.colors.element, false);
+    draw_rect(uitk_context.fb, &right_col_layout[n_families + 5], stylesheet.colors.element, false);
+
+    let bg_colors_layout = make_grid_layout(
+        &right_col_layout[n_families + 6],
+        stylesheet.margin,
+        5, 2
+    );
+
+    let canvas_rect = &columns_layout[0];
 
     let mut button_config = ButtonConfig {
         indicator_mode: ButtonIndicatorMode::Light,
@@ -183,12 +235,6 @@ pub fn step() {
 
     //
     // Justification
-
-    let justif_layout = make_horizontal_layout(
-        &toolbar_layout[0],
-        stylesheet.margin,
-        &[LayoutItem::Float; 3]
-    );
 
     state.justification.scope(TextJustification::Left, |button_state| {
         button_config.rect = justif_layout[0].clone();
@@ -213,16 +259,22 @@ pub fn step() {
     //
     // Text color
 
-    let color_layout = make_grid_layout(
-        &toolbar_layout[2],
-        stylesheet.margin,
-        5, 2
-    );
-
     for (i, (color, icon)) in COLOR_ICONS.iter().enumerate() {
         state.text_color.scope(*color, |button_state| {
             let icon_key = format!("{:?}", color);
-            button_config.rect = color_layout[i].clone();
+            button_config.rect = colors_layout[i].clone();
+            button_config.icon = Some((icon_key, icon));
+            uitk_context.button_toggle_once(&button_config, button_state);
+        });
+    }
+
+    //
+    // Background color
+
+    for (i, (color, icon)) in COLOR_ICONS.iter().enumerate() {
+        state.bg_color.scope(*color, |button_state| {
+            let icon_key = format!("{:?}", color);
+            button_config.rect = bg_colors_layout[i].clone();
             button_config.icon = Some((icon_key, icon));
             uitk_context.button_toggle_once(&button_config, button_state);
         });
@@ -233,44 +285,36 @@ pub fn step() {
 
     button_config.icon = None;
 
-    let available_sizes: Vec<u32> = font_family.get_available_sizes().collect();
-
-    let sizes_layout = make_horizontal_layout(
-        &toolbar_layout[4],
-        stylesheet.margin,
-        &vec![LayoutItem::Float; available_sizes.len()]
-    );
-
     for (i, &size) in available_sizes.iter().enumerate() {
         state.font_size.scope(size, |button_state| {
             button_config.rect = sizes_layout[i].clone();
             button_config.text = format!("{}", size);
-            uitk_context.button_toggle_once(&button_config, button_state);
+            uitk_context
+                .style(|ss| ss.text.sizes.medium = ss.text.sizes.small)
+                .button_toggle_once(&button_config, button_state);
         });
     }
 
     // Font family
 
-    let available_families: Vec<&str> = FONT_FAMILIES.keys().map(|s| *s).collect();
-
-    let families_layout = make_vertical_layout(
-        &toolbar_layout[6],
-        stylesheet.margin,
-        &vec![LayoutItem::Float; available_families.len()]
-    );
+    button_config.indicator_mode = ButtonIndicatorMode::Light;
 
     for (i, &family) in available_families.iter().enumerate() {
         state.font_family.scope(family.to_owned(), |button_state| {
-            button_config.rect = families_layout[i].clone();
+            button_config.rect = right_col_layout[2 + i].clone();
             button_config.text = family.to_owned();
             uitk_context
-                .style(|ss| ss.text = StyleSheetText::new(family, ss.text.sizes.clone()))
+                .style(|ss| {
+                    let mut text_sizes = ss.text.sizes.clone();
+                    text_sizes.medium = text_sizes.small;
+                    ss.text = StyleSheetText::new(family, text_sizes);
+                })
                 .button_toggle_once(&button_config, button_state);
         });
     }
 
     state.textbox_state.justif = *state.justification.selected();
-    uitk_context.style(|s| s.colors.editable = Color::WHITE).editable_text_box(
+    uitk_context.style(|s| s.colors.editable = *state.bg_color.selected()).editable_text_box(
         &canvas_rect,
         &mut EditableRichText {
             color: *state.text_color.selected(),
@@ -282,5 +326,6 @@ pub fn step() {
         true,
         Some(&state.textbox_prelude)
     );
+
 }
 
