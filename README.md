@@ -20,3 +20,9 @@ Features:
   * Python terminal (courtesy of rustpython)
   * Rich text editor
   * A semi-functional web browser
+
+  
+Font credits:
+* https://fontesk.com/xanmono-font/
+* https://fontesk.com/libertinus-typeface/
+* https://fontesk.com/major-mono-font/
