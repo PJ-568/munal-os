@@ -110,15 +110,21 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
         let p = &self.input_state.pointer;
         let vr = dst_rect;
 
-        if p.left_click_trigger && dst_rect.check_contains_point(p.x, p.y) {
+        let mut shadow_cursor = None;
+
+        if dst_rect.check_contains_point(p.x, p.y) {
             let (ox, oy) = state.scroll_offsets;
             let (x_text, y_text) = (
                 p.x - vr.x0 + ox,
                 p.y - vr.y0 + oy
             );
             if let Some(index) = formatted.as_ref().xy_to_index((x_text, y_text)) {
-                state.cursor = index - prelude_len;
-                cursor_changed = true;
+                if p.left_click_trigger {
+                    state.cursor = index - prelude_len;
+                    cursor_changed = true;
+                } else {
+                    shadow_cursor = Some(index - prelude_len);
+                }
             }
         }
 
@@ -138,6 +144,7 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
             formatted, bg_color,
             cursor: state.cursor,
             cursor_visible: state.cursor_visible,
+            shadow_cursor,
             prelude_len,
         };
 
@@ -247,6 +254,7 @@ struct TextRenderer {
     formatted: TrackedContent<FormattedRichText>,
     bg_color: Color,
     cursor: usize,
+    shadow_cursor: Option<usize>,
     prelude_len: usize,
     cursor_visible: bool,
 }
@@ -295,6 +303,7 @@ impl TileRenderer for TextRenderer {
                 self.formatted.get_id(),
                 self.cursor,
                 self.cursor_visible,
+                self.shadow_cursor,
                 self.bg_color,
             ))
         }
@@ -333,8 +342,8 @@ impl TileRenderer for TextRenderer {
         //
         // Draw blinking cursor
 
-        if self.cursor_visible {
-            let index = self.prelude_len + self.cursor;
+        let mut draw_cursor = |cursor: usize| {
+            let index = self.prelude_len + cursor;
             let (x, y, h) = self.formatted.as_ref().index_to_xy(index);
             let cursor_rect = Rect {
                 x0: x - ox,
@@ -344,6 +353,14 @@ impl TileRenderer for TextRenderer {
             };
             let cursor_color = self.bg_color.invert();
             draw_rect(dst_fb, &cursor_rect, cursor_color, false);
+        };
+
+        if self.cursor_visible {
+            draw_cursor(self.cursor);
+        }
+
+        if let Some(shadow_cursor) = self.shadow_cursor {
+            draw_cursor(shadow_cursor);
         }
     }
 }
