@@ -1,4 +1,4 @@
-use applib::{drawing::text::{RichText, DEFAULT_FONT_FAMILY, Font}, Color};
+use applib::{drawing::text::{RichText, Font, FONT_FAMILIES}, Color};
 use super::tree::{Tree, NodeId};
 use super::parsing::HtmlNode;
 
@@ -193,6 +193,7 @@ fn parse_hexcolor(hex_str: &str) -> Color {
 
 fn get_inline_block_contents(html_tree: &Tree<HtmlNode>, html_id: NodeId) -> RichText {
 
+    const TEXT_FONT_FAMILY: &str = "noto-sans-mono";
     const TEXT_SIZE: u32 = 12;
     const TEXT_COLOR: Color = Color::BLACK;
 
@@ -235,7 +236,12 @@ fn get_inline_block_contents(html_tree: &Tree<HtmlNode>, html_id: NodeId) -> Ric
         }
     }
 
-    let context = TextContext { color: TEXT_COLOR, font: DEFAULT_FONT_FAMILY.get_size(TEXT_SIZE), link: None };
+    let font = FONT_FAMILIES
+        .get(TEXT_FONT_FAMILY)
+        .expect("Unknown font family")
+        .get_size(TEXT_SIZE);
+
+    let context = TextContext { color: TEXT_COLOR, font, link: None };
     get_contents(html_tree, html_id, &context, &mut inline_text);
 
     inline_text

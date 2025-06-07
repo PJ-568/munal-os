@@ -1,5 +1,5 @@
 use crate::drawing::primitives::draw_rect;
-use crate::drawing::text::{draw_line_in_rect, TextJustification};
+use crate::drawing::text::{draw_line_in_rect, TextJustification, get_font};
 use crate::uitk::{UiContext};
 use crate::{FbViewMut, Rect};
 
@@ -12,7 +12,11 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
 
         if trigger.check_contains_point(px, py) {
 
-            let font = self.font_family.get_size(self.stylesheet.text_sizes.medium);
+            let font = get_font(
+                &self.stylesheet.text.font_family(),
+                self.stylesheet.text.sizes.medium,
+            );
+
             let color = self.stylesheet.colors.text;
 
             let (dx, dy) = offset;

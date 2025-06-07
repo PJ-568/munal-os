@@ -1,7 +1,7 @@
 use alloc::string::String;
 
 use crate::drawing::primitives::draw_rect;
-use crate::drawing::text::{draw_rich_slice, format_rich_lines, Font, FormattedRichText, RichText, TextJustification};
+use crate::drawing::text::{draw_rich_slice, format_rich_lines, Font, FormattedRichText, RichText, TextJustification, get_font};
 use crate::content::{ContentId, TrackedContent};
 use crate::Color;
 use crate::Rect;
@@ -71,7 +71,11 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
         let time_sec = (self.time as u64) / 1000;
 
         // Only used if text is not already a RichText
-        let font = self.font_family.get_size(self.stylesheet.text_sizes.medium);
+        let font = get_font(
+            &self.stylesheet.text.font_family(),
+            self.stylesheet.text.sizes.medium,
+        );
+
         let color = self.stylesheet.colors.text;
 
         let (rich_text, prelude_len) = match prelude {

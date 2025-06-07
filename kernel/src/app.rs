@@ -8,7 +8,7 @@ use applib::{FbView, StyleSheet};
 use crate::shell::{pie_menu, PieDrawCalls, PieMenuEntry};
 use crate::stats::SystemStats;
 use applib::drawing::primitives::{draw_rect, draw_rect_outline};
-use applib::drawing::text::{draw_line_in_rect, draw_str, Font, TextJustification};
+use applib::drawing::text::{draw_line_in_rect, draw_str, get_font, Font, TextJustification};
 use applib::geometry::{Point2D, Vec2D};
 use applib::uitk::{self, GraphSeries, TextBoxState};
 use applib::{input::InputState, Color, FbViewMut, Framebuffer, OwnedPixels, Rect};
@@ -394,7 +394,10 @@ pub fn run_apps<F: FbViewMut>(
     //
     // Step and draw apps
 
-    let font = uitk_context.font_family.get_size(stylesheet.text_sizes.medium);
+    let font = get_font(
+        &stylesheet.text.font_family(),
+        stylesheet.text.sizes.medium,
+    );
 
     let n = apps_manager.z_ordered.len();
 
@@ -441,7 +444,6 @@ pub fn run_apps<F: FbViewMut>(
             AppState::Active { wasm_app, audit_mode, paused } => {
 
                 if *paused {
-                    let font = uitk_context.font_family.get_size(stylesheet.text_sizes.medium);
                     draw_line_in_rect(
                         uitk_context.fb,
                         "PAUSED",
@@ -488,7 +490,6 @@ pub fn run_apps<F: FbViewMut>(
 
             AppState::Crashed { error } => {
 
-                let font = uitk_context.font_family.get_size(stylesheet.text_sizes.medium);
                 let (x0, y0) = deco.content_rect.origin();
                 draw_str(
                     uitk_context.fb,
@@ -539,6 +540,7 @@ fn app_audit_window<F: FbViewMut>(
 
     const SECTION_TITLE_FONT_SIZE: u32 = 18;
     const SECTION_SUBTITLE_FONT_SIZE: u32 = 12;
+    const LOG_FONT_SIZE: u32 = 12;
 
     let target_frametime: f32 = 1000.0 / crate::FPS_TARGET as f32;
 
@@ -611,8 +613,9 @@ fn app_audit_window<F: FbViewMut>(
         },
     ];
 
-    let title_font = uitk_context.font_family.get_size(SECTION_TITLE_FONT_SIZE);
-    let subtitle_font = uitk_context.font_family.get_size(SECTION_SUBTITLE_FONT_SIZE);
+    let font_family_name = &uitk_context.stylesheet.text.font_family();
+    let title_font = get_font(font_family_name, SECTION_TITLE_FONT_SIZE);
+    let subtitle_font = get_font(font_family_name, SECTION_SUBTITLE_FONT_SIZE);
 
     let mut y = deco.window_rect.y0;
     let x = deco.window_rect.x0 + deco.window_rect.w as i64 + 10;
@@ -658,7 +661,7 @@ fn app_audit_window<F: FbViewMut>(
         i64::max(y + MIN_AUDIT_WIN_H as i64, win_y - deco.handle_h as i64 - 1),
     ]);
 
-    uitk_context.style(|ss| ss.text_sizes.medium = 12).text_box(
+    uitk_context.style(|ss| ss.text.sizes.medium = LOG_FONT_SIZE).text_box(
         &console_rect,
         console_log,
         scrollable_text_state,

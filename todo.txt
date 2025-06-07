@@ -4,6 +4,7 @@
 * !!! crashes on window resizes
 * !!! black border overlaps resize button
 * !!! memory graph scale in audit
+* !!! order of apps in pie menu is inconsistent
 
 * scrollbars interfere with resize button
 * resize handle "jumps" to cursor when resizing

@@ -1,6 +1,8 @@
 use crate::app::AppDescriptor;
+use alloc::borrow::ToOwned;
+use alloc::ffi::CString;
 use applib::{Framebuffer, OwnedPixels, Rect, Color};
-use applib::{StyleSheet, StyleSheetColors, TextSizes};
+use applib::{StyleSheet, StyleSheetColors, TextSizes, StyleSheetText};
 use lazy_static::lazy_static;
 
 lazy_static! {
@@ -68,11 +70,14 @@ lazy_static! {
             outline: Color::rgb(25, 25, 25),
         },
         margin: 2,
-        text_sizes: TextSizes {
-            small: 12,
-            medium: 18,
-            large: 24,
-        }
+        text: StyleSheetText::new(
+            "noto-sans-mono",
+            TextSizes {
+                small: 12,
+                medium: 18,
+                large: 24,
+            }
+        ),
     };
 
     //

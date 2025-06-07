@@ -3,7 +3,7 @@ extern crate alloc;
 use alloc::format;
 use applib::drawing::primitives::draw_rect;
 use lazy_static::lazy_static;
-use applib::drawing::text::{draw_line_in_rect, draw_str, TextJustification, DEFAULT_FONT_FAMILY};
+use applib::drawing::text::{draw_line_in_rect, draw_str, get_font, TextJustification};
 use applib::{Color, FbView, FbViewMut, Rect};
 use applib::{Framebuffer, OwnedPixels};
 use applib::uitk::{self, ButtonConfig, ContentId, TextBoxState, UuidProvider};
@@ -115,7 +115,10 @@ pub fn step() {
         ]
     );
 
-    let font = DEFAULT_FONT_FAMILY.get_size(stylesheet.text_sizes.medium);
+    let font = get_font(
+        &stylesheet.text.font_family(),
+        stylesheet.text.sizes.medium,
+    );
 
     let elapsed = match state.chrono_state {
         ChronoState::Stopped => 0.0,

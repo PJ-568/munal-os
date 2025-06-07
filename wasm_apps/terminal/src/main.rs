@@ -7,7 +7,7 @@ use alloc::vec::Vec;
 use alloc::format;
 use applib::content::TrackedContent;
 use applib::drawing::text::{
-    FontFamily, RichText, DEFAULT_FONT_FAMILY
+    get_font, FontFamily, RichText
 };
 use applib::input::Keycode;
 use applib::uitk::{self, UiStore, TextBoxState, EditableRichText};
@@ -77,7 +77,7 @@ pub fn step() {
     let win_rect = guestlib::get_win_rect();
     let stylesheet = guestlib::get_stylesheet();
 
-    let rich_text_prelude = get_rich_text_prelude(&stylesheet, &DEFAULT_FONT_FAMILY, &state.history);
+    let rich_text_prelude = get_rich_text_prelude(&stylesheet, &state.history);
 
     let time = guestlib::get_time();
 
@@ -100,7 +100,10 @@ pub fn step() {
         h: win_h,
     };
 
-    let font = DEFAULT_FONT_FAMILY.get_size(stylesheet.text_sizes.small);
+    let font = get_font(
+        &stylesheet.text.font_family(),
+        stylesheet.text.sizes.small
+    );
 
     let mut editable = EditableRichText { 
         rich_text: &mut state.input_buffer,
@@ -130,11 +133,13 @@ pub fn step() {
 
 fn get_rich_text_prelude(
     stylesheet: &StyleSheet,
-    font_family: &'static FontFamily,
     history: &TrackedContent<Vec<EvalResult>>,
 ) -> TrackedContent<RichText> {
 
-    let font = font_family.get_size(stylesheet.text_sizes.small);
+    let font = get_font(
+        &stylesheet.text.font_family(),
+        stylesheet.text.sizes.small
+    );
 
     let mut rich_text = RichText::new();
 

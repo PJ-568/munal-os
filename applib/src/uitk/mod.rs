@@ -1,3 +1,4 @@
+use alloc::format;
 use alloc::vec::Vec;
 use alloc::collections::BTreeMap;
 
@@ -17,7 +18,7 @@ pub use text::{render_rich_text, string_input};
 pub use crate::content::{ContentId, UuidProvider};
 use crate::{InputState, StyleSheet};
 use crate::{FbViewMut, Framebuffer, OwnedPixels};
-use crate::drawing::text::{FontFamily, DEFAULT_FONT_FAMILY};
+use crate::drawing::text::{FontFamily, FONT_FAMILIES};
 
 
 const TILE_CACHE_MAX_SIZE: usize = 20_000_000; // in bytes
@@ -99,18 +100,17 @@ pub struct UiContext<'a, F: FbViewMut> {
     pub time: f64,
 
     pub tile_cache: &'a mut TileCache,
-    pub font_family: &'static FontFamily,
 }
 
 impl<'a, F: FbViewMut> UiContext<'a, F> {
 
     pub fn style<'b>(&'b mut self, func: impl Fn(&mut StyleSheet)) -> UiContext<'b, F> {
-        let UiContext { fb, stylesheet, input_state, uuid_provider, time, tile_cache, font_family } = self;
+        let UiContext { fb, stylesheet, input_state, uuid_provider, time, tile_cache } = self;
 
         let mut new_stylesheet = stylesheet.clone();
         func(&mut new_stylesheet);
 
-        UiContext { fb, stylesheet: new_stylesheet, input_state, uuid_provider, time: *time, tile_cache, font_family }
+        UiContext { fb, stylesheet: new_stylesheet, input_state, uuid_provider, time: *time, tile_cache }
     }
 }
 
@@ -134,6 +134,7 @@ impl UiStore {
         time: f64,
     ) -> UiContext<'a, F> {
 
+        // TODO: move that somewhere else
         self.tile_cache.cleanup();
 
         UiContext {
@@ -143,7 +144,6 @@ impl UiStore {
             input_state,
             uuid_provider,
             time,
-            font_family: &DEFAULT_FONT_FAMILY,
         }
     }
 }

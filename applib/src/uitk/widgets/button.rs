@@ -1,5 +1,5 @@
 use crate::drawing::primitives::{draw_rect, draw_rect_outline};
-use crate::drawing::text::{self, compute_text_bbox, draw_line_in_rect, draw_str, FontFamily, TextJustification};
+use crate::drawing::text::{self, compute_text_bbox, draw_line_in_rect, draw_str, get_font, FontFamily, TextJustification};
 use crate::uitk::{ContentId, UiContext};
 use crate::{Color, FbView, FbViewMut, Framebuffer, OwnedPixels, Rect, StyleSheet};
 use alloc::borrow::ToOwned;
@@ -24,7 +24,7 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
     fn button_inner(&mut self, config: &ButtonConfig, active: &mut bool, toggle_once: bool) {
 
         let UiContext {
-            fb, input_state, stylesheet, font_family, tile_cache, ..
+            fb, input_state, stylesheet, tile_cache, ..
         } = self;
 
         let ps = &input_state.pointer;
@@ -55,7 +55,7 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
         ));
 
         let button_fb = tile_cache.fetch_or_create(content_id, self.time, || {
-            render_button(stylesheet, font_family, config, state, *active)
+            render_button(stylesheet, config, state, *active)
         });
 
         let Rect { x0, y0, .. } = config.rect;
@@ -65,7 +65,6 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
 
 fn render_button(
     stylesheet: &StyleSheet,
-    font_family: &FontFamily,
     config: &ButtonConfig,
     state: ButtonState,
     active: bool,
@@ -150,7 +149,10 @@ fn render_button(
 
     if !config.text.is_empty() {
 
-        let font = font_family.get_size(stylesheet.text_sizes.medium);
+        let font = get_font(
+            &stylesheet.text.font_family(),
+            stylesheet.text.sizes.medium,
+        );
 
         let (text_w, text_h) = compute_text_bbox(&config.text, font);
 

@@ -1,7 +1,7 @@
 use alloc::format;
 use applib::{FbView, OwnedPixels, Framebuffer};
 use applib::drawing::primitives::{draw_rect, draw_rect_outline};
-use applib::drawing::text::{draw_line_in_rect, TextJustification};
+use applib::drawing::text::{draw_line_in_rect, TextJustification, get_font};
 use applib::uitk::{BarValue, HorizBarConfig, UiContext};
 use applib::{Color, Rect};
 use applib::{uitk::{self}, FbViewMut};
@@ -19,7 +19,10 @@ pub fn topbar<'a, F: FbViewMut>(
 
     let UiContext { fb, stylesheet, .. } = uitk_context;
 
-    let font = uitk_context.font_family.get_size(stylesheet.text_sizes.medium);
+    let font = get_font(
+        &stylesheet.text.font_family(),
+        stylesheet.text.sizes.medium,
+    );
 
     let (w, _h) = fb.shape();
 
@@ -59,7 +62,7 @@ pub fn topbar<'a, F: FbViewMut>(
         &clock_str,
         &topbar_rect,
         font,
-        uitk_context.stylesheet.colors.text,
+        stylesheet.colors.text,
         TextJustification::Right
     );
 
@@ -121,10 +124,15 @@ pub fn topbar<'a, F: FbViewMut>(
 
     };
 
+    let font = get_font(
+        &stylesheet.text.font_family(),
+        stylesheet.text.sizes.medium,
+    );
+
     let draw_text_box = |uitk_context: &mut uitk::UiContext<F>, x: &mut i64, text: &str, w: u32| {
 
         let fps_rect = Rect { x0: *x, y0: 0, w, h: TOPBAR_H };
-        let font = uitk_context.font_family.get_size(uitk_context.stylesheet.text_sizes.medium);
+
         draw_rect(uitk_context.fb, &fps_rect, uitk_context.stylesheet.colors.element, false);
         draw_line_in_rect(
             uitk_context.fb,

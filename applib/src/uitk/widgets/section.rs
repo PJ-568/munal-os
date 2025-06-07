@@ -1,5 +1,5 @@
 use crate::drawing::primitives::draw_rect;
-use crate::drawing::text::{draw_line_in_rect, TextJustification};
+use crate::drawing::text::{draw_line_in_rect, TextJustification, get_font};
 use crate::uitk::UiContext;
 use crate::{Color, FbViewMut, Rect};
 use num::traits::real::Real;
@@ -13,7 +13,12 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
         const MARGIN: u32 = 10;
 
         let Rect { x0, y0, w, h } = *rect;
-        let font = self.font_family.get_size(self.stylesheet.text_sizes.medium);
+
+        let font = get_font(
+            &self.stylesheet.text.font_family(),
+            self.stylesheet.text.sizes.medium,
+        );
+
         let color = Color::WHITE;
 
         let text_rect = Rect { 

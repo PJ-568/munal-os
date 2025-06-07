@@ -2,7 +2,7 @@ use alloc::borrow::ToOwned;
 use alloc::string::String;
 use alloc::vec::Vec;
 use applib::drawing::primitives::{draw_arc, ArcMode};
-use applib::drawing::text::{draw_str, Font, compute_text_bbox};
+use applib::drawing::text::{draw_str, Font, compute_text_bbox, get_font};
 use applib::geometry::{Point2D, Vec2D};
 use applib::uitk::{self};
 use applib::{Color, FbView, FbViewMut, Framebuffer, OwnedPixels};
@@ -60,7 +60,11 @@ pub fn pie_menu<'a, F: FbViewMut>(
 
     let pointer = &uitk_context.input_state.pointer;
     let stylesheet = &uitk_context.stylesheet;
-    let font = &uitk_context.font_family.get_size(stylesheet.text_sizes.medium);
+
+    let font = get_font(
+        &stylesheet.text.font_family(),
+        stylesheet.text.sizes.medium,
+    );
 
     let pointer = Point2D::<i64> {
         x: pointer.x,

@@ -53,6 +53,7 @@ fn load_font(family_name: &str, data: &FontData) -> Font {
 }
 
 pub struct FontFamily {
+    pub name: &'static str,
     by_size: BTreeMap<u32, Font>
 }
 
@@ -66,7 +67,7 @@ impl FontFamily {
         })
         .collect();
 
-        FontFamily { by_size }
+        FontFamily { name: family_name, by_size }
     }
 
     pub fn get_size(&self, size: u32) -> &Font {
@@ -89,24 +90,37 @@ pub struct Font {
 }
 
 lazy_static! {
-    pub static ref DEFAULT_FONT_FAMILY: FontFamily = FontFamily::from_font_data("noto-sans-mono", &[
-        FontData {
-            bitmap_png_bytes: include_bytes!("../../fonts/noto-sans-mono/24/bitmap.png"),
-            spec_json_bytes: include_bytes!("../../fonts/noto-sans-mono/24/spec.json")
-        },
-        FontData {
-            bitmap_png_bytes: include_bytes!("../../fonts/noto-sans-mono/20/bitmap.png"),
-            spec_json_bytes: include_bytes!("../../fonts/noto-sans-mono/20/spec.json")
-        },
-        FontData {
-            bitmap_png_bytes: include_bytes!("../../fonts/noto-sans-mono/18/bitmap.png"),
-            spec_json_bytes: include_bytes!("../../fonts/noto-sans-mono/18/spec.json")
-        },
-        FontData {
-            bitmap_png_bytes: include_bytes!("../../fonts/noto-sans-mono/12/bitmap.png"),
-            spec_json_bytes: include_bytes!("../../fonts/noto-sans-mono/12/spec.json")
-        },
-    ]);
+    pub static ref FONT_FAMILIES: BTreeMap<&'static str, FontFamily> = [
+        FontFamily::from_font_data("noto-sans-mono", &[
+            FontData {
+                bitmap_png_bytes: include_bytes!("../../fonts/noto-sans-mono/24/bitmap.png"),
+                spec_json_bytes: include_bytes!("../../fonts/noto-sans-mono/24/spec.json")
+            },
+            FontData {
+                bitmap_png_bytes: include_bytes!("../../fonts/noto-sans-mono/20/bitmap.png"),
+                spec_json_bytes: include_bytes!("../../fonts/noto-sans-mono/20/spec.json")
+            },
+            FontData {
+                bitmap_png_bytes: include_bytes!("../../fonts/noto-sans-mono/18/bitmap.png"),
+                spec_json_bytes: include_bytes!("../../fonts/noto-sans-mono/18/spec.json")
+            },
+            FontData {
+                bitmap_png_bytes: include_bytes!("../../fonts/noto-sans-mono/12/bitmap.png"),
+                spec_json_bytes: include_bytes!("../../fonts/noto-sans-mono/12/spec.json")
+            },
+        ])
+    ]
+    .into_iter().map(|family| (family.name, family)).collect();
+}
+
+pub fn get_font(family_name: &str, size: u32) -> &'static Font {
+
+    let font_family = FONT_FAMILIES
+        .get(family_name)
+        .expect(&format!("Unknown font family {}", family_name));
+
+    font_family.get_size(size)
+
 }
 
 #[derive(Clone, Copy, Hash, PartialEq, Debug)]

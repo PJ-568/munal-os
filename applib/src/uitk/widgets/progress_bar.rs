@@ -1,11 +1,11 @@
 use crate::drawing::primitives::draw_rect;
-use crate::drawing::text::draw_str;
+use crate::drawing::text::{draw_str, get_font};
 use crate::uitk::UiContext;
 use crate::{FbViewMut, Rect};
 
 impl<'a, F: FbViewMut> UiContext<'a, F> {
     pub fn progress_bar(&mut self, config: &ProgressBarConfig, progress: u64, text: &str) {
-        let UiContext { fb, stylesheet, font_family, .. } = self;
+        let UiContext { fb, stylesheet, .. } = self;
 
         let colorsheet = &stylesheet.colors;
 
@@ -25,7 +25,10 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
         draw_rect(*fb, &config.rect, colorsheet.background, false);
         draw_rect(*fb, &bar_rect, colorsheet.accent, false);
 
-        let font = font_family.get_size(stylesheet.text_sizes.medium);
+        let font = get_font(
+            &stylesheet.text.font_family(),
+            stylesheet.text.sizes.medium,
+        );
 
         let text_w = (text.len() * font.char_w) as u32;
         let text_h = font.char_h as u32;

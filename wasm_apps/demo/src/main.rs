@@ -4,7 +4,7 @@ use applib::uitk::layout::{make_grid_layout, make_horizontal_layout, LayoutItem}
 use lazy_static::lazy_static;
 
 use applib::drawing::primitives::draw_rect;
-use applib::drawing::text::{Font, RichText, TextJustification, DEFAULT_FONT_FAMILY};
+use applib::drawing::text::{Font, RichText, TextJustification, FONT_FAMILIES};
 use applib::Color;
 use core::cell::OnceCell;
 use guestlib::{PixelData, WasmLogger};
@@ -22,6 +22,8 @@ const AVAILABLE_TEXT_COLORS: [Color; 7] = [
     Color::YELLOW,
     Color::FUCHSIA,
 ];
+
+const TEXT_FONT_FAMILY: &str = "noto-sans-mono";
 
 lazy_static! {
     pub static ref JUSTIF_LEFT_ICON: Framebuffer<OwnedPixels> = 
@@ -75,7 +77,9 @@ pub fn init() -> () {
         tb_state
     };
 
-    let font = DEFAULT_FONT_FAMILY.get_size(*font_size.selected());    
+    let font_family = FONT_FAMILIES.get(TEXT_FONT_FAMILY).expect("Unknown font family");
+
+    let font = font_family.get_size(*font_size.selected());    
 
     let textbox_text = {
         let text = RichText::from_str("pouet\ntralala", *text_color.selected(), font, None);
@@ -167,6 +171,8 @@ pub fn step() {
         ..Default::default()
     };
 
+    let font_family = FONT_FAMILIES.get(TEXT_FONT_FAMILY).expect("Unknown font family");
+
     //
     // Justification
 
@@ -219,7 +225,7 @@ pub fn step() {
 
     button_config.icon = None;
 
-    let available_sizes: Vec<u32> = DEFAULT_FONT_FAMILY.get_available_sizes().collect();
+    let available_sizes: Vec<u32> = font_family.get_available_sizes().collect();
 
     let sizes_layout = make_horizontal_layout(
         &toolbar_layout[4],
@@ -240,7 +246,7 @@ pub fn step() {
         &canvas_rect,
         &mut EditableRichText {
             color: *state.text_color.selected(),
-            font: DEFAULT_FONT_FAMILY.get_size(*state.font_size.selected()),
+            font: font_family.get_size(*state.font_size.selected()),
             rich_text: &mut state.textbox_text
         },
         &mut state.textbox_state,
