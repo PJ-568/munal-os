@@ -14,18 +14,18 @@ use applib::content::TrackedContent;
 use applib::uitk::{self, ButtonConfig, ButtonIndicatorMode, EditableRichText, TextBoxState, UuidProvider};
 use applib::{Framebuffer, OwnedPixels};
 
-const AVAILABLE_TEXT_COLORS: [Color; 7] = [
-    Color::BLUE,
+const AVAILABLE_TEXT_COLORS: [Color; 10] = [
     Color::WHITE,
-    Color::RED,
     Color::BLACK,
+    Color::GREY,
+    Color::RED,
     Color::GREEN,
+    Color::BLUE,
     Color::YELLOW,
     Color::FUCHSIA,
+    Color::AQUA,
+    Color::ORANGE,
 ];
-
-const DEFAULT_FONT_FAMILY: &str = "xanmono";
-const DEFAULT_TEXT_SIZE: u32 = 18;
 
 lazy_static! {
     pub static ref JUSTIF_LEFT_ICON: Framebuffer<OwnedPixels> = 
@@ -36,7 +36,7 @@ lazy_static! {
         Framebuffer::from_png(include_bytes!("../icons/justif_right.png"));
 
     pub static ref COLOR_ICONS: Vec<(Color, Framebuffer<OwnedPixels>)> = AVAILABLE_TEXT_COLORS.iter()
-    .map(|&color| (color, Framebuffer::new_owned_filled(20, 15, color)))
+    .map(|&color| (color, Framebuffer::new_owned_filled(19, 16, color)))
     .collect();
 }
 
@@ -71,9 +71,11 @@ pub fn init() -> () {
 
     let mut uuid_provider = uitk::UuidProvider::new();
 
+    let stylesheet = guestlib::get_stylesheet();
+
     let justification = SingleSelection(TextJustification::Left);
-    let font_family_name = SingleSelection(DEFAULT_FONT_FAMILY.to_owned());
-    let font_size = SingleSelection(DEFAULT_TEXT_SIZE);
+    let font_family_name = SingleSelection(stylesheet.text.font_family().to_owned());
+    let font_size = SingleSelection(stylesheet.text.sizes.medium);
     let text_color = SingleSelection(Color::BLACK);
     let bg_color = SingleSelection(Color::WHITE);
 
@@ -141,8 +143,10 @@ impl<T: PartialEq> SingleSelection<T> {
 #[no_mangle]
 pub fn step() {
 
+    const TOOL_PANEL_W: u32 = 143;
     const BUTTON_H: u32 = 30;
-    const SIZE_SELECTION_H: u32 = 50;
+    const SELECTION_GRID_H: u32 = 50;
+    const AVAILABLE_FONT_SIZES: [u32; 6] = [12, 14, 16, 18, 20, 22];
 
     let state = unsafe { APP_STATE.get_mut().expect("App not initialized") };
 
@@ -164,14 +168,13 @@ pub fn step() {
 
     let available_families: Vec<&str> = FONT_FAMILIES.keys().map(|s| *s).collect();
     let n_families = available_families.len();
-    let available_sizes: Vec<u32> = vec![12, 18, 20, 24];
     let m = stylesheet.margin;
 
     let columns_layout = make_horizontal_layout(
         &win_rect.offset(-(m as i64)), stylesheet.margin,
         &[
             LayoutItem::Float,
-            LayoutItem::Fixed { size: 140 },
+            LayoutItem::Fixed { size: TOOL_PANEL_W },
         ]
     );
 
@@ -184,13 +187,13 @@ pub fn step() {
             ],
             vec![LayoutItem::Fixed { size: BUTTON_H }; n_families],
             vec![
-                LayoutItem::Fixed { size: SIZE_SELECTION_H },
+                LayoutItem::Fixed { size: SELECTION_GRID_H },
                 LayoutItem::Float,
             ],
             vec![
-                LayoutItem::Fixed { size: SIZE_SELECTION_H },
+                LayoutItem::Fixed { size: SELECTION_GRID_H },
                 LayoutItem::Float,
-                LayoutItem::Fixed { size: SIZE_SELECTION_H },
+                LayoutItem::Fixed { size: SELECTION_GRID_H },
             ]
         ].concat()
     );
@@ -285,7 +288,7 @@ pub fn step() {
 
     button_config.icon = None;
 
-    for (i, &size) in available_sizes.iter().enumerate() {
+    for (i, &size) in AVAILABLE_FONT_SIZES.iter().enumerate() {
         state.font_size.scope(size, |button_state| {
             button_config.rect = sizes_layout[i].clone();
             button_config.text = format!("{}", size);

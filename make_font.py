@@ -1,5 +1,7 @@
 import argparse
+import shutil
 from pathlib import Path
+from collections import Counter
 import json
 from math import ceil
 from PIL import Image, ImageDraw, ImageFont
@@ -13,41 +15,48 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--font", type=str, required=True)
     parser.add_argument("--name", type=str, required=True)
-    parser.add_argument("--size", type=int, required=True)
+    parser.add_argument("--sizes", type=str, required=True)
     args = parser.parse_args()
+
+    sizes_list = [int(s) for s in args.sizes.split(",")]
 
     chars = [chr(i) for i in range(*CHAR_RANGE)]
 
-    font = ImageFont.truetype(args.font, args.size)
-    (asc, desc) = font.getmetrics()
-    char_h = asc + desc
+    family_path = FONTS_FOLDER_PATH / args.name
+    shutil.rmtree(family_path, ignore_errors=True)
 
-    char_w_set = set(font.getlength(c) for c in chars)
-    assert len(char_w_set) == 1
-    char_w = int(ceil(char_w_set.pop()))
+    for size in sizes_list:
 
-    image = Image.new("L", (char_w * len(chars), char_h))
+        font = ImageFont.truetype(args.font, size)
+        (asc, desc) = font.getmetrics()
+        char_h = asc + desc
 
-    draw = ImageDraw.Draw(image)
+        char_w_set = set(font.getlength(c) for c in chars)
+        assert len(char_w_set) == 1
+        char_w = int(ceil(char_w_set.pop()))
 
-    for i, c in enumerate(chars):
-        draw.text((i * char_w, 0), c, font=font, fill=255)
+        image = Image.new("L", (char_w * len(chars), char_h))
 
-    output_path = FONTS_FOLDER_PATH / args.name / f"{args.size}"
-    output_path.mkdir(exist_ok=True, parents=True)
+        draw = ImageDraw.Draw(image)
 
-    image.save(output_path / "bitmap.png")
+        for i, c in enumerate(chars):
+            draw.text((i * char_w, 0), c, font=font, fill=255)
 
-    spec = {
-        "size": args.size,
-        "nb_chars": len(chars),
-        "char_h": char_h,
-        "char_w": char_w,
-        "base_y": asc,
-    }
+        output_path = family_path / f"{size}"
+        output_path.mkdir(exist_ok=True, parents=True)
 
-    with open(output_path / "spec.json", "w") as f:
-        json.dump(spec, f, indent=2)
+        image.save(output_path / "bitmap.png")
+
+        spec = {
+            "size": size,
+            "nb_chars": len(chars),
+            "char_h": char_h,
+            "char_w": char_w,
+            "base_y": asc,
+        }
+
+        with open(output_path / "spec.json", "w") as f:
+            json.dump(spec, f, indent=2)
 
 if __name__ == "__main__":
     main()

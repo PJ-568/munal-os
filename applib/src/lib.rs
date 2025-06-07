@@ -28,12 +28,15 @@ impl Color {
     pub const ZERO: Color = Color::rgba(0, 0, 0, 0);
     pub const WHITE: Color = Color::rgb(255, 255, 255);
     pub const BLACK: Color = Color::rgb(0, 0, 0);
+    pub const GREY: Color = Color::rgb(127, 127, 127);
     pub const RED: Color = Color::rgb(255, 0, 0);
     pub const GREEN: Color = Color::rgb(0, 255, 0);
     pub const BLUE: Color = Color::rgb(0, 0, 255);
     pub const YELLOW: Color = Color::rgb(255, 255, 0);
     pub const FUCHSIA: Color = Color::rgb(255, 0, 255);
     pub const AQUA: Color = Color::rgb(0, 250, 255);
+    pub const ORANGE: Color = Color::rgb(255, 127, 0);
+
 
     pub const fn rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
         Color([r, g, b, a])

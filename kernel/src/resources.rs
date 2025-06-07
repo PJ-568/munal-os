@@ -71,11 +71,11 @@ lazy_static! {
         },
         margin: 2,
         text: StyleSheetText::new(
-            "noto-sans-mono",
+            "NotoSansMono",
             TextSizes {
                 small: 12,
                 medium: 18,
-                large: 24,
+                large: 22,
             }
         ),
     };

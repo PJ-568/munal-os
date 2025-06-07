@@ -106,8 +106,10 @@ macro_rules! font_data {
 
 lazy_static! {
     pub static ref FONT_FAMILIES: BTreeMap<&'static str, FontFamily> = [
-        font_data!("noto-sans-mono", 12 18 24),
-        font_data!("xanmono", 12 18 24),
+        font_data!("NotoSansMono", 12 14 16 18 20 22),
+        font_data!("XanMono", 12 14 16 18 20 22),
+        font_data!("Libertinus", 12 14 16 18 20 22),
+        font_data!("MajorMono", 12 14 16 18 20 22),
     ]
     .into_iter().map(|family| (family.name, family)).collect();
 }
