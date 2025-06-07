@@ -15,7 +15,6 @@
 
 # Cosmetic
 
-* !!! re-do text editor UI
 * !!! pick proper font sizes
 * !!! pick a color palette
 * !!! pick a desktop wallpaper

@@ -4,7 +4,7 @@ use applib::uitk::layout::{make_grid_layout, make_horizontal_layout, make_vertic
 use lazy_static::lazy_static;
 
 use applib::drawing::primitives::draw_rect;
-use applib::drawing::text::{Font, RichText, TextJustification, FONT_FAMILIES};
+use applib::drawing::text::{draw_line_in_rect, get_font, Font, RichText, TextJustification, FONT_FAMILIES};
 use applib::{Color, StyleSheetText};
 use core::cell::OnceCell;
 use std::vec;
@@ -146,6 +146,7 @@ pub fn step() {
     const TOOL_PANEL_W: u32 = 143;
     const BUTTON_H: u32 = 30;
     const SELECTION_GRID_H: u32 = 50;
+    const SECTION_TITLE_H: u32 = 18;
     const AVAILABLE_FONT_SIZES: [u32; 6] = [12, 14, 16, 18, 20, 22];
 
     let state = unsafe { APP_STATE.get_mut().expect("App not initialized") };
@@ -191,53 +192,37 @@ pub fn step() {
                 LayoutItem::Float,
             ],
             vec![
+                LayoutItem::Fixed { size: SECTION_TITLE_H },
                 LayoutItem::Fixed { size: SELECTION_GRID_H },
                 LayoutItem::Float,
+                LayoutItem::Fixed { size: SECTION_TITLE_H },
                 LayoutItem::Fixed { size: SELECTION_GRID_H },
             ]
         ].concat()
     );
 
+    let font_family = FONT_FAMILIES
+        .get(state.font_family.selected().as_str())
+        .expect("Unknown font family");
+
+    let ui_font = get_font(stylesheet.text.font_family(), stylesheet.text.sizes.small);
+    let ui_text_color = stylesheet.colors.text;
+
+    let mut layout_offset = 0;
+
+    //
+    // Justification
+
     let justif_layout = make_horizontal_layout(
-        &right_col_layout[0],
+        &right_col_layout[layout_offset],
         stylesheet.margin,
         &[LayoutItem::Float; 3]
     );
-
-    let colors_layout = make_grid_layout(
-        &right_col_layout[n_families + 4],
-        stylesheet.margin,
-        5, 2
-    );
-
-    let sizes_layout = make_grid_layout(
-        &right_col_layout[n_families + 2], stylesheet.margin,
-        3, 2
-    );
-
-    draw_rect(uitk_context.fb, &right_col_layout[1], stylesheet.colors.element, false);
-    draw_rect(uitk_context.fb, &right_col_layout[n_families + 3], stylesheet.colors.element, false);
-    draw_rect(uitk_context.fb, &right_col_layout[n_families + 5], stylesheet.colors.element, false);
-
-    let bg_colors_layout = make_grid_layout(
-        &right_col_layout[n_families + 6],
-        stylesheet.margin,
-        5, 2
-    );
-
-    let canvas_rect = &columns_layout[0];
 
     let mut button_config = ButtonConfig {
         indicator_mode: ButtonIndicatorMode::Light,
         ..Default::default()
     };
-
-    let font_family = FONT_FAMILIES
-        .get(state.font_family.selected().as_str())
-        .expect("Unknown font family");
-
-    //
-    // Justification
 
     state.justification.scope(TextJustification::Left, |button_state| {
         button_config.rect = justif_layout[0].clone();
@@ -257,36 +242,48 @@ pub fn step() {
         uitk_context.button_toggle_once(&button_config, button_state);
     });
 
-    button_config.indicator_mode = ButtonIndicatorMode::Border;
+    layout_offset += 1;
 
-    //
-    // Text color
+    draw_rect(uitk_context.fb, &right_col_layout[layout_offset], stylesheet.colors.element, false);
 
-    for (i, (color, icon)) in COLOR_ICONS.iter().enumerate() {
-        state.text_color.scope(*color, |button_state| {
-            let icon_key = format!("{:?}", color);
-            button_config.rect = colors_layout[i].clone();
-            button_config.icon = Some((icon_key, icon));
-            uitk_context.button_toggle_once(&button_config, button_state);
+    layout_offset += 1;
+
+
+    // Font family
+
+    let mut button_config = ButtonConfig {
+        indicator_mode: ButtonIndicatorMode::Light,
+        ..Default::default()
+    };
+
+    for (i, &family) in available_families.iter().enumerate() {
+        state.font_family.scope(family.to_owned(), |button_state| {
+            button_config.rect = right_col_layout[layout_offset + i].clone();
+            button_config.text = family.to_owned();
+            uitk_context
+                .style(|ss| {
+                    let mut text_sizes = ss.text.sizes.clone();
+                    text_sizes.medium = text_sizes.small;
+                    ss.text = StyleSheetText::new(family, text_sizes);
+                })
+                .button_toggle_once(&button_config, button_state);
         });
     }
 
-    //
-    // Background color
-
-    for (i, (color, icon)) in COLOR_ICONS.iter().enumerate() {
-        state.bg_color.scope(*color, |button_state| {
-            let icon_key = format!("{:?}", color);
-            button_config.rect = bg_colors_layout[i].clone();
-            button_config.icon = Some((icon_key, icon));
-            uitk_context.button_toggle_once(&button_config, button_state);
-        });
-    }
+    layout_offset += n_families;
 
     //
     // Font size
 
-    button_config.icon = None;
+    let mut button_config = ButtonConfig {
+        indicator_mode: ButtonIndicatorMode::Border,
+        ..Default::default()
+    };
+
+    let sizes_layout = make_grid_layout(
+        &right_col_layout[layout_offset], stylesheet.margin,
+        3, 2
+    );
 
     for (i, &size) in AVAILABLE_FONT_SIZES.iter().enumerate() {
         state.font_size.scope(size, |button_state| {
@@ -298,23 +295,84 @@ pub fn step() {
         });
     }
 
-    // Font family
+    layout_offset += 1;
 
-    button_config.indicator_mode = ButtonIndicatorMode::Light;
+    draw_rect(uitk_context.fb, &right_col_layout[layout_offset], stylesheet.colors.element, false);
 
-    for (i, &family) in available_families.iter().enumerate() {
-        state.font_family.scope(family.to_owned(), |button_state| {
-            button_config.rect = right_col_layout[2 + i].clone();
-            button_config.text = family.to_owned();
-            uitk_context
-                .style(|ss| {
-                    let mut text_sizes = ss.text.sizes.clone();
-                    text_sizes.medium = text_sizes.small;
-                    ss.text = StyleSheetText::new(family, text_sizes);
-                })
-                .button_toggle_once(&button_config, button_state);
+    layout_offset += 1;
+
+    //
+    // Text color
+
+    let mut button_config = ButtonConfig {
+        indicator_mode: ButtonIndicatorMode::Border,
+        ..Default::default()
+    };
+
+    draw_rect(uitk_context.fb, &right_col_layout[layout_offset], stylesheet.colors.element, false);
+    draw_line_in_rect(
+        uitk_context.fb, "Foreground", &right_col_layout[layout_offset],
+        ui_font, ui_text_color, TextJustification::Left
+    );
+
+    layout_offset += 1;
+
+    let colors_layout = make_grid_layout(
+        &right_col_layout[layout_offset],
+        stylesheet.margin,
+        5, 2
+    );
+
+    for (i, (color, icon)) in COLOR_ICONS.iter().enumerate() {
+        state.text_color.scope(*color, |button_state| {
+            let icon_key = format!("{:?}", color);
+            button_config.rect = colors_layout[i].clone();
+            button_config.icon = Some((icon_key, icon));
+            uitk_context.button_toggle_once(&button_config, button_state);
         });
     }
+
+    layout_offset += 1;
+
+    draw_rect(uitk_context.fb, &right_col_layout[layout_offset], stylesheet.colors.element, false);
+
+    layout_offset += 1;
+
+    //
+    // Background color
+
+    let mut button_config = ButtonConfig {
+        indicator_mode: ButtonIndicatorMode::Border,
+        ..Default::default()
+    };
+
+    draw_rect(uitk_context.fb, &right_col_layout[layout_offset], stylesheet.colors.element, false);
+    draw_line_in_rect(
+        uitk_context.fb, "Background", &right_col_layout[layout_offset],
+        ui_font, ui_text_color, TextJustification::Left
+    );
+
+    layout_offset += 1;
+
+    let bg_colors_layout = make_grid_layout(
+        &right_col_layout[layout_offset],
+        stylesheet.margin,
+        5, 2
+    );
+
+    for (i, (color, icon)) in COLOR_ICONS.iter().enumerate() {
+        state.bg_color.scope(*color, |button_state| {
+            let icon_key = format!("{:?}", color);
+            button_config.rect = bg_colors_layout[i].clone();
+            button_config.icon = Some((icon_key, icon));
+            uitk_context.button_toggle_once(&button_config, button_state);
+        });
+    }
+
+    //
+    // Canvas
+
+    let canvas_rect = &columns_layout[0];
 
     state.textbox_state.justif = *state.justification.selected();
     uitk_context.style(|s| s.colors.editable = *state.bg_color.selected()).editable_text_box(
