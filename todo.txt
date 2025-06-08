@@ -9,11 +9,8 @@
 * clicks go through scrollbars
 
 
-
 # Cosmetic
 
-* !!! pick proper font sizes
-* !!! pick a color palette
 * !!! pick a desktop wallpaper
 * !!! welcome texts in text editor & web browser
 
@@ -27,8 +24,6 @@
 
 
 # Features
-
-* !!! version number + tooltip
 
 * wasm: restart button in window on crash
 * proper hover tooltips for resources topbar

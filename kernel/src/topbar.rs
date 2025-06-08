@@ -1,7 +1,7 @@
 use alloc::format;
 use applib::{FbView, OwnedPixels, Framebuffer};
 use applib::drawing::primitives::{draw_rect, draw_rect_outline};
-use applib::drawing::text::{draw_line_in_rect, TextJustification, get_font};
+use applib::drawing::text::{compute_text_bbox, draw_line_in_rect, get_font, TextJustification};
 use applib::uitk::{BarValue, HorizBarConfig, UiContext};
 use applib::{Color, Rect};
 use applib::{uitk::{self}, FbViewMut};
@@ -57,6 +57,8 @@ pub fn topbar<'a, F: FbViewMut>(
         datetime.minute()
     );
 
+    let clock_bbox = compute_text_bbox(&clock_str, font);
+
     draw_line_in_rect(
         *fb,
         &clock_str,
@@ -78,6 +80,8 @@ pub fn topbar<'a, F: FbViewMut>(
     const ICON_MARGIN_W2: u32 = 5;
     const TOOLTIP_OFFSET_GAP_H: u32 = 5;
     const FPS_COUNTER_W: u32 = 100;
+
+    let tooltip_dy = (TOPBAR_H + TOOLTIP_OFFSET_GAP_H) as i64;
 
     struct ResourceMonitor<'a> {
         bar_values: &'a [BarValue],
@@ -111,8 +115,7 @@ pub fn topbar<'a, F: FbViewMut>(
         }.align_to_rect_vert(&topbar_rect);
 
         let tooltip_rect = icon_rect.bounding_box(&res_bar_rect);
-        let dy = (TOPBAR_H + TOOLTIP_OFFSET_GAP_H) as i64;
-        uitk_context.tooltip(&tooltip_rect, (0, dy), monitor.text);
+        uitk_context.tooltip(&tooltip_rect, (0, tooltip_dy), monitor.text);
     
         uitk_context.horiz_bar(
             &HorizBarConfig { max_val: monitor.max_val, rect: res_bar_rect },
@@ -209,6 +212,23 @@ pub fn topbar<'a, F: FbViewMut>(
         text: &format!("{:.1}/{:.1} kB/s", net_sent_rate / 1000.0, net_recv_rate / 1000.0),
     });
 
+
+    //
+    // OS version
+
+    
+    let version_str = "Munal OS v1.0";
+    let version_bbox = compute_text_bbox(version_str, font);
+
+    let (clock_w, _) = clock_bbox;
+    let (version_w, _) = version_bbox;
+
+    let space_rect = Rect::from_xyxy([x, 0, (w - clock_w) as i64 - 1, TOPBAR_H as i64 - 1]);
+    let version_rect = Rect { x0: 0, y0: 0, w: version_w, h: TOPBAR_H }.align_to_rect(&space_rect);
+    draw_line_in_rect(uitk_context.fb, "Munal OS v1.0", &version_rect, font, Color::WHITE, TextJustification::Center);
+
+    uitk_context.tooltip(&version_rect, (0, tooltip_dy), VERSION_MSG);
+
     //
     // Borders
 
@@ -226,3 +246,6 @@ pub fn topbar<'a, F: FbViewMut>(
         false
     );
 }
+
+
+const VERSION_MSG: &'static str = "La 34eme, au bout";

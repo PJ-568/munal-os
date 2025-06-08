@@ -1,11 +1,13 @@
 use crate::drawing::primitives::draw_rect;
-use crate::drawing::text::{draw_line_in_rect, TextJustification, get_font};
+use crate::drawing::text::{compute_text_bbox, draw_line_in_rect, get_font, TextJustification};
 use crate::uitk::{UiContext};
 use crate::{FbViewMut, Rect};
 
 impl<'a, F: FbViewMut> UiContext<'a, F> {
 
     pub fn tooltip(&mut self, trigger: &Rect, offset: (i64, i64), text: &str) {
+
+        const MARGIN: u32 = 10;
 
         let px = self.input_state.pointer.x;
         let py = self.input_state.pointer.y;
@@ -20,10 +22,11 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
             let color = self.stylesheet.colors.text;
 
             let (dx, dy) = offset;
-            let rect = Rect { 
-                x0: trigger.x0 + dx, y0: trigger.y0 + dy,
-                w: trigger.w, h: trigger.h,
-            };
+            let (cx, cy) = trigger.center();
+
+            let (text_w, text_h) = compute_text_bbox(text, font);
+
+            let rect = Rect::from_center(cx + dx, cy + dy, text_w + MARGIN, text_h + MARGIN);
     
             draw_rect(self.fb, &rect, self.stylesheet.colors.element, false);
             draw_line_in_rect(self.fb, text, &rect, font, color, TextJustification::Center);
