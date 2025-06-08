@@ -168,7 +168,7 @@ fn get_progress_repr(request_state: &RequestState) -> (u64, Cow<str>) {
             }
         },
         RequestState::Render { .. } => (7, Cow::Borrowed("Rendering")),
-        RequestState::Idle { .. } => (8, Cow::Borrowed("")),
+        RequestState::Idle { .. } => (0, Cow::Borrowed("")),
     }
 }
 
@@ -295,7 +295,7 @@ pub fn step() {
 
 fn compute_ui_layout(stylesheet: &StyleSheet, win_rect: &Rect) -> UiLayout {
 
-    const BUTTON_SIZE: u32 = 60;
+    const BUTTON_SIZE: u32 = 50;
 
     let layout_1 = make_vertical_layout(
         &win_rect.zero_origin().offset(-(stylesheet.margin as i64)),

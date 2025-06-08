@@ -281,7 +281,7 @@ pub fn run_apps<F: FbViewMut>(
                 match &app.app_state {
                     AppState::Active { paused, .. } if !paused => PieMenuEntry::Button {
                         icon: &resources::PAUSE_ICON,
-                        color: stylesheet.colors.yellow,
+                        color: stylesheet.colors.green,
                         text: "Pause".to_owned(),
                         text_color: stylesheet.colors.text,
                         weight: 1.0,

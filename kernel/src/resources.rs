@@ -61,7 +61,7 @@ lazy_static! {
             frame: Color::rgb(50, 50, 50),
             green: Color::rgb(0, 180, 0),
             hover_overlay: Color::rgba(150, 150, 150, 100),
-            selected_overlay: Color::rgb(0, 120, 0),
+            selected_overlay: Color::rgb(30, 30, 30),
             red: Color::rgb(180, 0, 0),
             yellow: Color::rgb(180, 180, 0),
             text: Color::WHITE,
@@ -74,7 +74,7 @@ lazy_static! {
             "NotoSansMono",
             TextSizes {
                 small: 12,
-                medium: 18,
+                medium: 16,
                 large: 22,
             }
         ),
