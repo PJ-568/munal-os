@@ -1,6 +1,5 @@
 # Bugs
 
-
 * !!! crashes on window resizes
 * !!! black border overlaps resize button
 
@@ -33,7 +32,6 @@
 # Meta
 
 * !!! cleanup imports & formatting
-* !!! cleanup project root
 
 * Demo videos
 * Project icon

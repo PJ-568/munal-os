@@ -29,7 +29,7 @@
 			"path": "wasm_apps/terminal"
 		},
 		{
-			"path": "wasm_apps/demo"
+			"path": "wasm_apps/text_editor"
 		}
 	],
 	"settings": {}
