@@ -13,7 +13,7 @@ WASM_APPS = [
     "cube_3d",
     "terminal",
     "web_browser",
-    "demo",
+    "text_editor",
 ]
 
 CRATE_PATHS = [

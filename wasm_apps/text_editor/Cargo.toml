@@ -1,5 +1,5 @@
 [package]
-name = "demo"
+name = "text_editor"
 version = "0.1.0"
 edition = "2021"
 
@@ -11,7 +11,7 @@ lazy_static = { version = "1.0" }
 
 # To avoid error about missing tests
 [[bin]]
-name = "demo"
+name = "text_editor"
 test = false
 bench = false
 

@@ -129,8 +129,8 @@ lazy_static! {
             icon: &WEB_ICON,
         },
         AppDescriptor {
-            data: include_bytes!("../wasm/demo.wasm"),
-            name: "UI demo",
+            data: include_bytes!("../wasm/text_editor.wasm"),
+            name: "Text Editor",
             init_win_rect: Rect {
                 x0: 400,
                 y0: 300,

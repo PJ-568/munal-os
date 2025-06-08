@@ -27,15 +27,13 @@
 
 * wasm: restart button in window on crash
 * proper hover tooltips for resources topbar
-* gui demo app (with crash demo)
-* web browser: navigation controls (back/reload/home)
 * file editor + "fake" filesystem
 
 
 # Meta
 
 * !!! cleanup imports & formatting
-* !!! License
+* !!! cleanup project root
 
 * Demo videos
 * Project icon
