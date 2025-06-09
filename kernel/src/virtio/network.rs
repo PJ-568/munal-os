@@ -121,10 +121,9 @@ impl VirtioNetwork {
     }
 
     pub fn get_counters(&mut self) -> (usize, usize) {
-
         let recv_counter = self.recv_counter;
         let sent_counter = self.sent_counter;
-        
+
         self.recv_counter = 0;
         self.sent_counter = 0;
 

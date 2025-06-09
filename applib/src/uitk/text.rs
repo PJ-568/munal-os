@@ -1,4 +1,3 @@
-
 use alloc::string::String;
 use alloc::vec::Vec;
 
@@ -7,8 +6,7 @@ use crate::drawing::text::{draw_rich_slice, FormattedRichText};
 use crate::input::{InputEvent, InputState};
 use crate::input::{Keycode, CHARMAP};
 use crate::Rect;
-use crate::{FbViewMut, FbView};
-
+use crate::{FbView, FbViewMut};
 
 use super::UuidProvider;
 
@@ -103,7 +101,6 @@ pub trait EditableText {
 }
 
 impl EditableText for TrackedContent<String> {
-
     fn len(&self) -> usize {
         self.as_ref().len()
     }
@@ -122,9 +119,13 @@ pub fn render_rich_text<F: FbViewMut>(
     origin: (i64, i64),
     formatted: &FormattedRichText,
 ) {
-
     let (x0, y0) = origin;
-    let rect = Rect { x0, y0, w: formatted.w, h: formatted.h };
+    let rect = Rect {
+        x0,
+        y0,
+        w: formatted.w,
+        h: formatted.h,
+    };
 
     let mut dst_fb = dst_fb.subregion_mut(&rect);
     let fb_shape = dst_fb.shape_as_rect();
@@ -134,8 +135,8 @@ pub fn render_rich_text<F: FbViewMut>(
         let line_draw_rect = Rect {
             x0: 0,
             y0: y,
-            w: line.w, h: line.h
-
+            w: line.w,
+            h: line.h,
         };
         if line_draw_rect.intersection(&fb_shape).is_some() {
             draw_rich_slice(&mut dst_fb, &line.chars, 0, y);

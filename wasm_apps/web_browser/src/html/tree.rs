@@ -64,10 +64,10 @@ impl<T: Debug> Tree<T> {
     }
 
     pub fn iter_children(&self, node_id: NodeId) -> impl Iterator<Item = (NodeId, &Node<T>)> {
-        self.nodes[node_id.0].children.iter().map(|child_id| (
-            *child_id,
-            &self.nodes[child_id.0]
-        ))
+        self.nodes[node_id.0]
+            .children
+            .iter()
+            .map(|child_id| (*child_id, &self.nodes[child_id.0]))
     }
 
     pub fn len(&self) -> usize {

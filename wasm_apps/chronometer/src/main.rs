@@ -2,31 +2,29 @@ extern crate alloc;
 
 use alloc::format;
 use applib::drawing::primitives::draw_rect;
-use lazy_static::lazy_static;
 use applib::drawing::text::{draw_line_in_rect, get_font, TextJustification};
+use applib::uitk::layout::{make_horizontal_layout, make_vertical_layout, LayoutItem};
+use applib::uitk::{self, ButtonConfig, ContentId, UuidProvider};
 use applib::{Color, FbView, FbViewMut};
 use applib::{Framebuffer, OwnedPixels};
-use applib::uitk::{self, ButtonConfig, ContentId, UuidProvider};
-use applib::uitk::layout::{make_horizontal_layout, make_vertical_layout, LayoutItem};
 use core::cell::OnceCell;
 use guestlib::{PixelData, WasmLogger};
+use lazy_static::lazy_static;
 
 mod drawing;
-use drawing::{draw_chrono, draw_background};
+use drawing::{draw_background, draw_chrono};
 
 static LOGGER: WasmLogger = WasmLogger;
 const LOGGING_LEVEL: log::LevelFilter = log::LevelFilter::Debug;
 
 lazy_static! {
-    pub static ref PLAY_ICON: Framebuffer<OwnedPixels> = 
+    pub static ref PLAY_ICON: Framebuffer<OwnedPixels> =
         Framebuffer::from_png(include_bytes!("../icons/play.png"));
-    pub static ref PAUSE_ICON: Framebuffer<OwnedPixels> = 
+    pub static ref PAUSE_ICON: Framebuffer<OwnedPixels> =
         Framebuffer::from_png(include_bytes!("../icons/pause.png"));
-    pub static ref STOP_ICON: Framebuffer<OwnedPixels> = 
+    pub static ref STOP_ICON: Framebuffer<OwnedPixels> =
         Framebuffer::from_png(include_bytes!("../icons/stop.png"));
 }
-
-
 
 struct AppState {
     pixel_data: PixelData,
@@ -49,7 +47,6 @@ fn main() {}
 
 #[no_mangle]
 pub fn init() -> () {
-
     log::set_max_level(LOGGING_LEVEL);
     log::set_logger(&LOGGER).unwrap();
 
@@ -69,7 +66,6 @@ pub fn init() -> () {
 
 #[no_mangle]
 pub fn step() {
-
     const BUTTON_W: u32 = 32;
 
     let state = unsafe { APP_STATE.get_mut().expect("App not initialized") };
@@ -93,16 +89,13 @@ pub fn step() {
         &stylesheet,
         &input_state,
         uuid_provider,
-        t_now
+        t_now,
     );
 
     let layout_1 = make_vertical_layout(
         &win_rect.offset(-(stylesheet.margin as i64)),
         stylesheet.margin,
-        &[
-            LayoutItem::Fixed { size: BUTTON_W },
-            LayoutItem::Float,
-        ]
+        &[LayoutItem::Fixed { size: BUTTON_W }, LayoutItem::Float],
     );
 
     let layout_2 = make_horizontal_layout(
@@ -112,13 +105,10 @@ pub fn step() {
             LayoutItem::Float,
             LayoutItem::Fixed { size: BUTTON_W },
             LayoutItem::Fixed { size: BUTTON_W },
-        ]
+        ],
     );
 
-    let font = get_font(
-        &stylesheet.text.font_family(),
-        stylesheet.text.sizes.medium,
-    );
+    let font = get_font(&stylesheet.text.font_family(), stylesheet.text.sizes.medium);
 
     let elapsed = match state.chrono_state {
         ChronoState::Stopped => 0.0,
@@ -127,7 +117,6 @@ pub fn step() {
     };
 
     let time_str = {
-
         let t_ms = f64::round(elapsed) as u32;
         let disp_ms = t_ms % 1000;
 
@@ -140,37 +129,46 @@ pub fn step() {
         format!("{:02}:{:02}.{:03}", disp_min, disp_s, disp_ms)
     };
 
-    draw_rect(uitk_context.fb, &layout_1[0], stylesheet.colors.element, false);
+    draw_rect(
+        uitk_context.fb,
+        &layout_1[0],
+        stylesheet.colors.element,
+        false,
+    );
 
     draw_line_in_rect(
         uitk_context.fb,
         &time_str,
         &layout_2[0],
-        font, Color::YELLOW, TextJustification::Left
+        font,
+        Color::YELLOW,
+        TextJustification::Left,
     );
 
     match state.chrono_state {
         ChronoState::Stopped => {
-            let play_pressed = uitk_context.button(&ButtonConfig { 
+            let play_pressed = uitk_context.button(&ButtonConfig {
                 rect: layout_2[2].clone(),
                 icon: Some(("play_icon".to_owned(), &PLAY_ICON)),
                 ..Default::default()
             });
 
             if play_pressed {
-                state.chrono_state = ChronoState::Running { t_resume: t_now, t_offset: 0.0 };
+                state.chrono_state = ChronoState::Running {
+                    t_resume: t_now,
+                    t_offset: 0.0,
+                };
             }
-        },
+        }
 
         ChronoState::Paused { t_elapsed } => {
-
-            let stop_pressed = uitk_context.button(&ButtonConfig { 
+            let stop_pressed = uitk_context.button(&ButtonConfig {
                 rect: layout_2[1].clone(),
                 icon: Some(("stop_icon".to_owned(), &STOP_ICON)),
                 ..Default::default()
             });
 
-            let play_pressed = uitk_context.button(&ButtonConfig { 
+            let play_pressed = uitk_context.button(&ButtonConfig {
                 rect: layout_2[2].clone(),
                 icon: Some(("play_icon".to_owned(), &PLAY_ICON)),
                 ..Default::default()
@@ -179,20 +177,21 @@ pub fn step() {
             if stop_pressed {
                 state.chrono_state = ChronoState::Stopped;
             } else if play_pressed {
-                state.chrono_state = ChronoState::Running { t_resume: t_now, t_offset: t_elapsed };
+                state.chrono_state = ChronoState::Running {
+                    t_resume: t_now,
+                    t_offset: t_elapsed,
+                };
             }
-
         }
 
         ChronoState::Running { t_resume, t_offset } => {
-
-            let stop_pressed = uitk_context.button(&ButtonConfig { 
+            let stop_pressed = uitk_context.button(&ButtonConfig {
                 rect: layout_2[1].clone(),
                 icon: Some(("stop_icon".to_owned(), &STOP_ICON)),
                 ..Default::default()
             });
 
-            let pause_pressed = uitk_context.button(&ButtonConfig { 
+            let pause_pressed = uitk_context.button(&ButtonConfig {
                 rect: layout_2[2].clone(),
                 icon: Some(("pause_icon".to_owned(), &PAUSE_ICON)),
                 ..Default::default()
@@ -201,9 +200,10 @@ pub fn step() {
             if stop_pressed {
                 state.chrono_state = ChronoState::Stopped;
             } else if pause_pressed {
-                state.chrono_state = ChronoState::Paused { t_elapsed: t_now - t_resume + t_offset };
+                state.chrono_state = ChronoState::Paused {
+                    t_elapsed: t_now - t_resume + t_offset,
+                };
             }
-
         }
     };
 
@@ -212,11 +212,13 @@ pub fn step() {
 
     let bg_content_id = ContentId::from_hash(&(canvas_w, canvas_h));
 
-    let bg_fb = uitk_context.tile_cache.fetch_or_create(bg_content_id, t_now, || {
-        let mut bg_fb = Framebuffer::new_owned(canvas_w, canvas_h);
-        draw_background(&mut bg_fb);
-        bg_fb
-    });
+    let bg_fb = uitk_context
+        .tile_cache
+        .fetch_or_create(bg_content_id, t_now, || {
+            let mut bg_fb = Framebuffer::new_owned(canvas_w, canvas_h);
+            draw_background(&mut bg_fb);
+            bg_fb
+        });
 
     canvas_fb.copy_from_fb(bg_fb, (0, 0), false);
 

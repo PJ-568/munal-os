@@ -84,7 +84,6 @@ pub fn step() {
     );
 }
 
-
 struct SceneRenderer<'a> {
     canvas_shape: (u32, u32),
     scene: &'a Scene,
@@ -93,7 +92,6 @@ struct SceneRenderer<'a> {
 }
 
 impl<'a> TileRenderer for SceneRenderer<'a> {
-
     fn shape(&self) -> (u32, u32) {
         self.canvas_shape
     }
@@ -103,23 +101,16 @@ impl<'a> TileRenderer for SceneRenderer<'a> {
     }
 
     fn content_id(&self, viewport_rect: &Rect) -> ContentId {
-
         let Rect { x0, y0, .. } = *viewport_rect;
 
         let is_scene_tile = x0 == 0 && y0 == 0;
 
         // Technically depends on the scene too, but we assume it doesn´t change
-        ContentId::from_hash(&(
-            is_scene_tile,
-            self.pointer.x,
-            self.pointer.y,
-        ))
+        ContentId::from_hash(&(is_scene_tile, self.pointer.x, self.pointer.y))
     }
 
     fn render<F: FbViewMut>(&self, dst_fb: &mut F, viewport_rect: &Rect) {
-
         let Rect { x0, y0, w, h } = *viewport_rect;
-        
 
         dst_fb.fill(self.bg_color);
 

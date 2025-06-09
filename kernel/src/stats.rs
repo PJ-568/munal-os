@@ -1,10 +1,9 @@
-use alloc::collections::BTreeMap;
 use crate::allocator::AllocStats;
+use alloc::collections::BTreeMap;
 
 const HISTORY_SIZE: usize = 256; // In number of frames
 
 pub struct SystemStats {
-
     pub heap_total: usize,
 
     by_app: BTreeMap<&'static str, [AppDataPoint; HISTORY_SIZE]>,
@@ -30,28 +29,29 @@ pub struct AppDataPoint {
 }
 
 impl SystemStats {
-
     pub fn new(alloc_stats: &AllocStats, app_names: &[&'static str]) -> Self {
+        let by_app = app_names
+            .iter()
+            .map(|app_name| {
+                let app_history: [AppDataPoint; HISTORY_SIZE] =
+                    core::array::from_fn(|_| AppDataPoint {
+                        net_recv: 0,
+                        net_sent: 0,
+                        mem_used: 0,
+                        frametime_used: 0.0,
+                    });
 
-        let by_app = app_names.iter().map(|app_name| {
+                (*app_name, app_history)
+            })
+            .collect();
 
-            let app_history: [AppDataPoint; HISTORY_SIZE] = core::array::from_fn(|_| AppDataPoint {
+        let system_history: [SystemDataPoint; HISTORY_SIZE] =
+            core::array::from_fn(|_| SystemDataPoint {
                 net_recv: 0,
                 net_sent: 0,
-                mem_used: 0,
-                frametime_used: 0.0
+                alloc: alloc_stats.clone(),
+                frametime_used: 0.0,
             });
-
-            (*app_name, app_history)
-        })
-        .collect();
-
-        let system_history: [SystemDataPoint; HISTORY_SIZE] = core::array::from_fn(|_| SystemDataPoint {
-            net_recv: 0,
-            net_sent: 0,
-            alloc: alloc_stats.clone(),
-            frametime_used: 0.0,
-        });
 
         SystemStats {
             heap_total: alloc_stats.total,
@@ -65,7 +65,7 @@ impl SystemStats {
         self.ring_index = (self.ring_index + 1) % HISTORY_SIZE;
     }
 
-    pub fn get_system_point_mut(&mut self) -> &mut SystemDataPoint{
+    pub fn get_system_point_mut(&mut self) -> &mut SystemDataPoint {
         self.system.get_mut(self.ring_index).unwrap()
     }
 
@@ -75,34 +75,29 @@ impl SystemStats {
     }
 
     pub fn get_system_history<T, F>(&self, selector: F) -> [T; HISTORY_SIZE]
-
-        where F: Fn(&SystemDataPoint) -> T
+    where
+        F: Fn(&SystemDataPoint) -> T,
     {
         core::array::from_fn(|t| {
             let dp = get_history_point(&self.system, self.ring_index, t);
             selector(dp)
         })
-
     }
 
-    pub fn get_app_history<T, F>(&self,  app_name: &str, selector: F) -> [T; HISTORY_SIZE]
-    
-        where F: Fn(&AppDataPoint) -> T
+    pub fn get_app_history<T, F>(&self, app_name: &str, selector: F) -> [T; HISTORY_SIZE]
+    where
+        F: Fn(&AppDataPoint) -> T,
     {
-
         let app_history = self.by_app.get(app_name).expect("Unknown app");
 
         core::array::from_fn(|t| {
             let dp = get_history_point(app_history, self.ring_index, t);
             selector(dp)
         })
-
     }
-
 }
 
 fn get_history_point<T>(ring_buffer: &[T], ring_index: usize, t: usize) -> &T {
-
     let ring_size = ring_buffer.len();
 
     let i = match t <= ring_index {
@@ -111,15 +106,12 @@ fn get_history_point<T>(ring_buffer: &[T], ring_index: usize, t: usize) -> &T {
     };
 
     &ring_buffer[i]
-
 }
 
 fn get_ring_iterator<T>(ring_buffer: &[T], ring_index: usize) -> impl Iterator<Item = &T> {
-
     let ring_size = ring_buffer.len();
 
     (0..ring_size).map(move |t| {
-
         let i = match t <= ring_index {
             true => ring_index - t,
             false => ring_size - (t - ring_index),
@@ -127,6 +119,4 @@ fn get_ring_iterator<T>(ring_buffer: &[T], ring_index: usize) -> impl Iterator<I
 
         &ring_buffer[i]
     })
-
 }
-

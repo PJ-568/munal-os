@@ -32,7 +32,6 @@ pub struct StyleSheetColors {
 #[derive(Clone, Debug)]
 #[repr(C)]
 pub struct StyleSheetText {
-
     // We can't allow any pointer in the stylesheet struct,
     // so strings must be stored as byte arrays
     // (no String or CString or whatnot)
@@ -43,14 +42,17 @@ pub struct StyleSheetText {
 }
 
 impl StyleSheetText {
-
     pub fn new(family_name: &str, sizes: TextSizes) -> Self {
         let src_bytes = family_name.as_bytes();
         let len = src_bytes.len();
         let mut font_family_bytes = [0u8; FONT_FAMILY_NAME_MAX_LEN];
         font_family_bytes[..len].copy_from_slice(src_bytes);
 
-        Self { font_family_bytes, font_family_len: len as u32, sizes }
+        Self {
+            font_family_bytes,
+            font_family_len: len as u32,
+            sizes,
+        }
     }
 
     pub fn font_family(&self) -> &str {

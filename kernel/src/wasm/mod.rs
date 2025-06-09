@@ -3,9 +3,9 @@ use alloc::string::ToString;
 use alloc::vec;
 use alloc::{borrow::ToOwned, string::String};
 use applib::content::TrackedContent;
+use applib::content::UuidProvider;
 use applib::geometry::Point2D;
 use applib::BorrowedPixels;
-use applib::content::UuidProvider;
 use core::fmt::Write;
 use core::mem::size_of;
 use smoltcp::iface::SocketHandle;
@@ -40,8 +40,6 @@ impl WasmEngine {
         app_name: &str,
         init_rect: &Rect,
     ) -> WasmApp {
-
-
         let engine = Engine::new(&Config::default().consume_fuel(true));
 
         let module = Module::new(&engine, wasm_code).unwrap();
@@ -165,7 +163,8 @@ impl StoreWrapper {
         input_state: &InputState,
         win_rect: &Rect,
         mut func: F,
-    ) -> T where
+    ) -> T
+    where
         F: FnMut(&mut Store<StoreData>) -> T,
     {
         self.store.set_fuel(STEP_FUEL).unwrap();
@@ -188,12 +187,7 @@ impl StoreWrapper {
     }
 
     fn get_framebuffer(&self, instance: &Instance) -> Option<Framebuffer<BorrowedPixels>> {
-        let wasm_fb_def = self
-            .store
-            .as_context()
-            .data()
-            .framebuffer
-            .clone()?;
+        let wasm_fb_def = self.store.as_context().data().framebuffer.clone()?;
 
         let mem = instance.get_memory(&self.store, "memory").unwrap();
         let ctx = self.store.as_context();
@@ -237,7 +231,7 @@ struct StepContextView<'a> {
 }
 
 impl StoreData {
-    fn new(uuid_provider: &mut UuidProvider,  app_name: &str) -> Self {
+    fn new(uuid_provider: &mut UuidProvider, app_name: &str) -> Self {
         StoreData {
             app_name: app_name.to_owned(),
             framebuffer: None,
@@ -253,8 +247,11 @@ impl StoreData {
     where
         F: FnMut(StepContextView) -> T,
     {
-
-        let Self { step_context, console_output, .. } = self;
+        let Self {
+            step_context,
+            console_output,
+            ..
+        } = self;
 
         let step_context = step_context.as_mut().expect("No StepContext set");
 
@@ -267,7 +264,7 @@ impl StoreData {
             win_rect: &step_context.win_rect,
             timings: &mut step_context.timings,
 
-            console_output
+            console_output,
         };
 
         func(step_context_view)
@@ -281,7 +278,6 @@ pub struct WasmApp {
 }
 
 impl WasmApp {
-
     pub fn step(
         &mut self,
         system: &mut System,
@@ -291,8 +287,6 @@ impl WasmApp {
         is_foreground: bool,
         is_paused: bool,
     ) -> Result<(), anyhow::Error> {
-
-
         //
         // Getting app-local input state
 
@@ -306,27 +300,31 @@ impl WasmApp {
             input_state
         };
 
-
         //
         // Stepping WASM app
 
         let t0 = system.clock.time();
 
-        let step_ret = self.store_wrapper
-            .with_context(system, uuid_provider, &relative_input_state, win_rect, |mut store| {
+        let step_ret = self
+            .store_wrapper
+            .with_context(
+                system,
+                uuid_provider,
+                &relative_input_state,
+                win_rect,
+                |mut store| {
+                    store.data_mut().net_recv = 0;
+                    store.data_mut().net_sent = 0;
 
-                store.data_mut().net_recv = 0;
-                store.data_mut().net_sent = 0;
-
-                match is_paused {
-                    false => self.wasm_step.call(&mut store, ()),
-                    true => Ok(())
-                }
-            })
+                    match is_paused {
+                        false => self.wasm_step.call(&mut store, ()),
+                        true => Ok(()),
+                    }
+                },
+            )
             .map_err(|wasm_err| anyhow::format_err!(wasm_err));
-            
-        let t1 = system.clock.time();
 
+        let t1 = system.clock.time();
 
         //
         // Filling app stats
@@ -341,7 +339,7 @@ impl WasmApp {
         let net_recv = store.data().net_recv;
         let net_sent = store.data().net_sent;
 
-        *app_stats = AppDataPoint  {
+        *app_stats = AppDataPoint {
             net_recv,
             net_sent,
             mem_used: mem_size as usize,
@@ -393,7 +391,6 @@ impl WasmApp {
 // }
 
 fn add_host_apis(mut store: &mut Store<StoreData>, linker: &mut Linker<StoreData>) {
-
     // This works but is sadly not enough to display a backtrace, not sure why
     const ENV_VARS: [&str; 1] = ["RUST_BACKTRACE=full"];
 
@@ -555,14 +552,15 @@ fn add_host_apis(mut store: &mut Store<StoreData>, linker: &mut Linker<StoreData
         let string_data_size: u32 = ENV_VARS.iter().map(|s| s.len() as u32 + 1).sum();
 
         mem_data[environ_count..environ_count + 4].copy_from_slice(&u32::to_le_bytes(n_env_vars));
-        mem_data[environ_buf_size..environ_buf_size + 4].copy_from_slice(&u32::to_le_bytes(string_data_size));
+        mem_data[environ_buf_size..environ_buf_size + 4]
+            .copy_from_slice(&u32::to_le_bytes(string_data_size));
 
         0
     });
 
     linker_impl!(m, "environ_get", |mut caller: Caller<StoreData>,
-                                          environ: i32,
-                                          environ_buf: i32|
+                                    environ: i32,
+                                    environ_buf: i32|
      -> i32 {
         log::debug!(
             "Function environ_get() called (dest buffers {:#x} {:#x})",
@@ -577,13 +575,12 @@ fn add_host_apis(mut store: &mut Store<StoreData>, linker: &mut Linker<StoreData
         let mut str_addr = environ_buf as usize;
 
         for env_str in ENV_VARS.iter() {
-
             let p_bytes = &u32::to_le_bytes(str_addr as u32);
-            mem_data[p_addr..p_addr+p_bytes.len()].copy_from_slice(p_bytes);
+            mem_data[p_addr..p_addr + p_bytes.len()].copy_from_slice(p_bytes);
             p_addr += p_bytes.len();
 
             let s_bytes = env_str.as_bytes();
-            mem_data[str_addr..str_addr+s_bytes.len()].copy_from_slice(s_bytes);
+            mem_data[str_addr..str_addr + s_bytes.len()].copy_from_slice(s_bytes);
             str_addr += s_bytes.len();
             mem_data[str_addr] = 0;
             str_addr += 1;
@@ -639,7 +636,6 @@ fn add_host_apis(mut store: &mut Store<StoreData>, linker: &mut Linker<StoreData
 
         0
     });
-
 
     //
     // APIs specific to this particular WASM environment
@@ -782,7 +778,7 @@ fn add_host_apis(mut store: &mut Store<StoreData>, linker: &mut Linker<StoreData
             Ok(written_len) => {
                 caller.data_mut().net_sent += written_len;
                 written_len as i32
-            },
+            }
             Err(err) => {
                 log::error!("{}", err);
                 -1
@@ -926,8 +922,11 @@ fn add_host_apis(mut store: &mut Store<StoreData>, linker: &mut Linker<StoreData
 }
 
 fn log_message(msg: &str, level: i32, step_context: &mut StepContextView) {
-
-    let StepContextView { uuid_provider, console_output, .. } = step_context;
+    let StepContextView {
+        uuid_provider,
+        console_output,
+        ..
+    } = step_context;
     let console_output = console_output.mutate(uuid_provider);
     console_output.write_str(&msg).unwrap();
     console_output.write_char('\n').unwrap();
@@ -939,7 +938,6 @@ fn log_message(msg: &str, level: i32, step_context: &mut StepContextView) {
         4 => log::debug!("{}", msg),
         _ => log::trace!("{}", msg),
     };
-
 }
 
 #[repr(i32)]

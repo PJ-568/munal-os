@@ -1,17 +1,23 @@
 extern crate alloc;
 
-use applib::uitk::layout::{make_grid_layout, make_horizontal_layout, make_vertical_layout, LayoutItem};
+use applib::uitk::layout::{
+    make_grid_layout, make_horizontal_layout, make_vertical_layout, LayoutItem,
+};
 use lazy_static::lazy_static;
 
-use applib::drawing::primitives::draw_rect;
-use applib::drawing::text::{draw_line_in_rect, get_font, RichText, TextJustification, FONT_FAMILIES};
-use applib::{Color, StyleSheetText};
-use core::cell::OnceCell;
-use std::vec;
-use guestlib::{PixelData, WasmLogger};
 use applib::content::TrackedContent;
-use applib::uitk::{self, ButtonConfig, ButtonIndicatorMode, EditableRichText, TextBoxState, UuidProvider};
+use applib::drawing::primitives::draw_rect;
+use applib::drawing::text::{
+    draw_line_in_rect, get_font, RichText, TextJustification, FONT_FAMILIES,
+};
+use applib::uitk::{
+    self, ButtonConfig, ButtonIndicatorMode, EditableRichText, TextBoxState, UuidProvider,
+};
+use applib::{Color, StyleSheetText};
 use applib::{Framebuffer, OwnedPixels};
+use core::cell::OnceCell;
+use guestlib::{PixelData, WasmLogger};
+use std::vec;
 
 const AVAILABLE_TEXT_COLORS: [Color; 10] = [
     Color::WHITE,
@@ -29,22 +35,23 @@ const AVAILABLE_TEXT_COLORS: [Color; 10] = [
 const INTRO_COLOR: Color = Color::BLACK;
 const INTRO_TITLE_TEXT: &'static str = "Demo text editor\n";
 const INTRO_TITLE_SIZE: u32 = 22;
-const INTRO_BODY_TEXT: &'static str = "You can change text justification, font, size and colors on the right.
+const INTRO_BODY_TEXT: &'static str =
+    "You can change text justification, font, size and colors on the right.
 Left/right arrow keys or left click to change the cursor position.
 ";
 const INTRO_BODY_SIZE: u32 = 16;
 
 lazy_static! {
-    pub static ref JUSTIF_LEFT_ICON: Framebuffer<OwnedPixels> = 
+    pub static ref JUSTIF_LEFT_ICON: Framebuffer<OwnedPixels> =
         Framebuffer::from_png(include_bytes!("../icons/justif_left.png"));
-    pub static ref JUSTIF_CENTER_ICON: Framebuffer<OwnedPixels> = 
+    pub static ref JUSTIF_CENTER_ICON: Framebuffer<OwnedPixels> =
         Framebuffer::from_png(include_bytes!("../icons/justif_center.png"));
-    pub static ref JUSTIF_RIGHT_ICON: Framebuffer<OwnedPixels> = 
+    pub static ref JUSTIF_RIGHT_ICON: Framebuffer<OwnedPixels> =
         Framebuffer::from_png(include_bytes!("../icons/justif_right.png"));
-
-    pub static ref COLOR_ICONS: Vec<(Color, Framebuffer<OwnedPixels>)> = AVAILABLE_TEXT_COLORS.iter()
-    .map(|&color| (color, Framebuffer::new_owned_filled(19, 16, color)))
-    .collect();
+    pub static ref COLOR_ICONS: Vec<(Color, Framebuffer<OwnedPixels>)> = AVAILABLE_TEXT_COLORS
+        .iter()
+        .map(|&color| (color, Framebuffer::new_owned_filled(19, 16, color)))
+        .collect();
 }
 
 struct AppState {
@@ -71,7 +78,6 @@ fn main() {}
 
 #[no_mangle]
 pub fn init() -> () {
-
     log::set_max_level(LOGGING_LEVEL);
     log::set_logger(&LOGGER).unwrap();
 
@@ -97,18 +103,30 @@ pub fn init() -> () {
 
     let textbox_text = {
         let mut text = RichText::new();
-        text.add_part(INTRO_TITLE_TEXT, INTRO_COLOR, font_family.get_size(INTRO_TITLE_SIZE), None);
-        text.add_part(INTRO_BODY_TEXT, INTRO_COLOR, font_family.get_size(INTRO_BODY_SIZE), None);
+        text.add_part(
+            INTRO_TITLE_TEXT,
+            INTRO_COLOR,
+            font_family.get_size(INTRO_TITLE_SIZE),
+            None,
+        );
+        text.add_part(
+            INTRO_BODY_TEXT,
+            INTRO_COLOR,
+            font_family.get_size(INTRO_BODY_SIZE),
+            None,
+        );
         for _ in 0..POEM_SPACING {
-            text.add_part("\n", INTRO_COLOR, font_family.get_size(INTRO_BODY_SIZE), None);
+            text.add_part(
+                "\n",
+                INTRO_COLOR,
+                font_family.get_size(INTRO_BODY_SIZE),
+                None,
+            );
         }
-        let poem_font_family = FONT_FAMILIES
-            .get(POEM_FONT)
-            .expect("Unknown font family");
+        let poem_font_family = FONT_FAMILIES.get(POEM_FONT).expect("Unknown font family");
         text.add_part(POEM_TEXT, POEM_COLOR, poem_font_family.get_size(18), None);
         TrackedContent::new(text, &mut uuid_provider)
     };
-
 
     let state = AppState {
         pixel_data: PixelData::new(),
@@ -149,7 +167,6 @@ impl<T: PartialEq> SingleSelection<T> {
 
 #[no_mangle]
 pub fn step() {
-
     const TOOL_PANEL_W: u32 = 143;
     const BUTTON_H: u32 = 30;
     const SELECTION_GRID_H: u32 = 50;
@@ -163,7 +180,6 @@ pub fn step() {
     let input_state = guestlib::get_input_state();
     let win_rect = guestlib::get_win_rect().zero_origin();
 
-
     let mut framebuffer = state.pixel_data.get_framebuffer();
 
     let mut uitk_context = state.ui_store.get_context(
@@ -171,7 +187,7 @@ pub fn step() {
         &stylesheet,
         &input_state,
         &mut state.uuid_provider,
-        time
+        time,
     );
 
     let available_families: Vec<&str> = FONT_FAMILIES.keys().map(|s| *s).collect();
@@ -179,33 +195,40 @@ pub fn step() {
     let m = stylesheet.margin;
 
     let columns_layout = make_horizontal_layout(
-        &win_rect.offset(-(m as i64)), stylesheet.margin,
-        &[
-            LayoutItem::Float,
-            LayoutItem::Fixed { size: TOOL_PANEL_W },
-        ]
+        &win_rect.offset(-(m as i64)),
+        stylesheet.margin,
+        &[LayoutItem::Float, LayoutItem::Fixed { size: TOOL_PANEL_W }],
     );
 
     let right_col_layout = make_vertical_layout(
-        &columns_layout.last().unwrap(), stylesheet.margin,
+        &columns_layout.last().unwrap(),
+        stylesheet.margin,
         &[
-            vec![
-                LayoutItem::Fixed { size: BUTTON_H },
-                LayoutItem::Float,
-            ],
+            vec![LayoutItem::Fixed { size: BUTTON_H }, LayoutItem::Float],
             vec![LayoutItem::Fixed { size: BUTTON_H }; n_families],
             vec![
-                LayoutItem::Fixed { size: SELECTION_GRID_H },
+                LayoutItem::Fixed {
+                    size: SELECTION_GRID_H,
+                },
                 LayoutItem::Float,
             ],
             vec![
-                LayoutItem::Fixed { size: SECTION_TITLE_H },
-                LayoutItem::Fixed { size: SELECTION_GRID_H },
+                LayoutItem::Fixed {
+                    size: SECTION_TITLE_H,
+                },
+                LayoutItem::Fixed {
+                    size: SELECTION_GRID_H,
+                },
                 LayoutItem::Float,
-                LayoutItem::Fixed { size: SECTION_TITLE_H },
-                LayoutItem::Fixed { size: SELECTION_GRID_H },
-            ]
-        ].concat()
+                LayoutItem::Fixed {
+                    size: SECTION_TITLE_H,
+                },
+                LayoutItem::Fixed {
+                    size: SELECTION_GRID_H,
+                },
+            ],
+        ]
+        .concat(),
     );
 
     let font_family = FONT_FAMILIES
@@ -223,7 +246,7 @@ pub fn step() {
     let justif_layout = make_horizontal_layout(
         &right_col_layout[layout_offset],
         stylesheet.margin,
-        &[LayoutItem::Float; 3]
+        &[LayoutItem::Float; 3],
     );
 
     let mut button_config = ButtonConfig {
@@ -231,30 +254,40 @@ pub fn step() {
         ..Default::default()
     };
 
-    state.justification.scope(TextJustification::Left, |button_state| {
-        button_config.rect = justif_layout[0].clone();
-        button_config.icon = Some(("justif_left_icon".to_owned(), &JUSTIF_LEFT_ICON));
-        uitk_context.button_toggle_once(&button_config, button_state);
-    });
+    state
+        .justification
+        .scope(TextJustification::Left, |button_state| {
+            button_config.rect = justif_layout[0].clone();
+            button_config.icon = Some(("justif_left_icon".to_owned(), &JUSTIF_LEFT_ICON));
+            uitk_context.button_toggle_once(&button_config, button_state);
+        });
 
-    state.justification.scope(TextJustification::Center, |button_state| {
-        button_config.rect = justif_layout[1].clone();
-        button_config.icon = Some(("justif_center_icon".to_owned(), &JUSTIF_CENTER_ICON));
-        uitk_context.button_toggle_once(&button_config, button_state);
-    });
+    state
+        .justification
+        .scope(TextJustification::Center, |button_state| {
+            button_config.rect = justif_layout[1].clone();
+            button_config.icon = Some(("justif_center_icon".to_owned(), &JUSTIF_CENTER_ICON));
+            uitk_context.button_toggle_once(&button_config, button_state);
+        });
 
-    state.justification.scope(TextJustification::Right, |button_state| {
-        button_config.rect = justif_layout[2].clone();
-        button_config.icon = Some(("justif_right_icon".to_owned(), &JUSTIF_RIGHT_ICON));
-        uitk_context.button_toggle_once(&button_config, button_state);
-    });
+    state
+        .justification
+        .scope(TextJustification::Right, |button_state| {
+            button_config.rect = justif_layout[2].clone();
+            button_config.icon = Some(("justif_right_icon".to_owned(), &JUSTIF_RIGHT_ICON));
+            uitk_context.button_toggle_once(&button_config, button_state);
+        });
 
     layout_offset += 1;
 
-    draw_rect(uitk_context.fb, &right_col_layout[layout_offset], stylesheet.colors.element, false);
+    draw_rect(
+        uitk_context.fb,
+        &right_col_layout[layout_offset],
+        stylesheet.colors.element,
+        false,
+    );
 
     layout_offset += 1;
-
 
     // Font family
 
@@ -287,10 +320,7 @@ pub fn step() {
         ..Default::default()
     };
 
-    let sizes_layout = make_grid_layout(
-        &right_col_layout[layout_offset], stylesheet.margin,
-        3, 2
-    );
+    let sizes_layout = make_grid_layout(&right_col_layout[layout_offset], stylesheet.margin, 3, 2);
 
     for (i, &size) in AVAILABLE_FONT_SIZES.iter().enumerate() {
         state.font_size.scope(size, |button_state| {
@@ -304,7 +334,12 @@ pub fn step() {
 
     layout_offset += 1;
 
-    draw_rect(uitk_context.fb, &right_col_layout[layout_offset], stylesheet.colors.element, false);
+    draw_rect(
+        uitk_context.fb,
+        &right_col_layout[layout_offset],
+        stylesheet.colors.element,
+        false,
+    );
 
     layout_offset += 1;
 
@@ -316,19 +351,24 @@ pub fn step() {
         ..Default::default()
     };
 
-    draw_rect(uitk_context.fb, &right_col_layout[layout_offset], stylesheet.colors.element, false);
+    draw_rect(
+        uitk_context.fb,
+        &right_col_layout[layout_offset],
+        stylesheet.colors.element,
+        false,
+    );
     draw_line_in_rect(
-        uitk_context.fb, "Foreground", &right_col_layout[layout_offset],
-        ui_font, ui_text_color, TextJustification::Left
+        uitk_context.fb,
+        "Foreground",
+        &right_col_layout[layout_offset],
+        ui_font,
+        ui_text_color,
+        TextJustification::Left,
     );
 
     layout_offset += 1;
 
-    let colors_layout = make_grid_layout(
-        &right_col_layout[layout_offset],
-        stylesheet.margin,
-        5, 2
-    );
+    let colors_layout = make_grid_layout(&right_col_layout[layout_offset], stylesheet.margin, 5, 2);
 
     for (i, (color, icon)) in COLOR_ICONS.iter().enumerate() {
         state.text_color.scope(*color, |button_state| {
@@ -341,7 +381,12 @@ pub fn step() {
 
     layout_offset += 1;
 
-    draw_rect(uitk_context.fb, &right_col_layout[layout_offset], stylesheet.colors.element, false);
+    draw_rect(
+        uitk_context.fb,
+        &right_col_layout[layout_offset],
+        stylesheet.colors.element,
+        false,
+    );
 
     layout_offset += 1;
 
@@ -353,19 +398,25 @@ pub fn step() {
         ..Default::default()
     };
 
-    draw_rect(uitk_context.fb, &right_col_layout[layout_offset], stylesheet.colors.element, false);
+    draw_rect(
+        uitk_context.fb,
+        &right_col_layout[layout_offset],
+        stylesheet.colors.element,
+        false,
+    );
     draw_line_in_rect(
-        uitk_context.fb, "Background", &right_col_layout[layout_offset],
-        ui_font, ui_text_color, TextJustification::Left
+        uitk_context.fb,
+        "Background",
+        &right_col_layout[layout_offset],
+        ui_font,
+        ui_text_color,
+        TextJustification::Left,
     );
 
     layout_offset += 1;
 
-    let bg_colors_layout = make_grid_layout(
-        &right_col_layout[layout_offset],
-        stylesheet.margin,
-        5, 2
-    );
+    let bg_colors_layout =
+        make_grid_layout(&right_col_layout[layout_offset], stylesheet.margin, 5, 2);
 
     for (i, (color, icon)) in COLOR_ICONS.iter().enumerate() {
         state.bg_color.scope(*color, |button_state| {
@@ -382,19 +433,20 @@ pub fn step() {
     let canvas_rect = &columns_layout[0];
 
     state.textbox_state.justif = *state.justification.selected();
-    uitk_context.style(|s| s.colors.editable = *state.bg_color.selected()).editable_text_box(
-        &canvas_rect,
-        &mut EditableRichText {
-            color: *state.text_color.selected(),
-            font: font_family.get_size(*state.font_size.selected()),
-            rich_text: &mut state.textbox_text
-        },
-        &mut state.textbox_state,
-        false,
-        true,
-        None::<&EditableRichText>
-    );
-
+    uitk_context
+        .style(|s| s.colors.editable = *state.bg_color.selected())
+        .editable_text_box(
+            &canvas_rect,
+            &mut EditableRichText {
+                color: *state.text_color.selected(),
+                font: font_family.get_size(*state.font_size.selected()),
+                rich_text: &mut state.textbox_text,
+            },
+            &mut state.textbox_state,
+            false,
+            true,
+            None::<&EditableRichText>,
+        );
 }
 
 const POEM_TEXT: &'static str = "Across old bark

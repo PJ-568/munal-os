@@ -1,12 +1,10 @@
 use crate::drawing::primitives::draw_rect;
-use crate::uitk::{UiContext};
+use crate::uitk::UiContext;
 use crate::{Color, FbViewMut, Rect};
 use num::traits::float::FloatCore;
 
 impl<'a, F: FbViewMut> UiContext<'a, F> {
-
     pub fn horiz_bar(&mut self, config: &HorizBarConfig, values: &[BarValue]) {
-
         const MARGIN: u32 = 2;
 
         draw_rect(self.fb, &config.rect, self.stylesheet.colors.element, false);
@@ -23,12 +21,16 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
         let bar_h = h / values.len() as u32;
 
         for (i, bar_val) in values.iter().enumerate() {
-
             let y = y0 + bar_h as i64 * i as i64;
             let v = f32::max(0.0, f32::min(config.max_val, bar_val.val));
             let bar_w = f32::round((w as f32) * v / config.max_val) as u32;
 
-            let rect = Rect {  x0, y0: y, w: bar_w, h: bar_h };
+            let rect = Rect {
+                x0,
+                y0: y,
+                w: bar_w,
+                h: bar_h,
+            };
 
             draw_rect(self.fb, &rect, bar_val.color, false);
         }

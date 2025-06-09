@@ -1,11 +1,11 @@
 use alloc::vec::Vec;
 
+use crate::content::ContentId;
 use crate::drawing::primitives::draw_rect;
 use crate::input::InputEvent;
-use crate::content::ContentId;
 use crate::Color;
 use crate::Rect;
-use crate::{FbViewMut, FbView, Framebuffer};
+use crate::{FbView, FbViewMut, Framebuffer};
 
 use crate::uitk::{TileCache, UiContext};
 
@@ -43,8 +43,12 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
         let x_scroll_enabled = src_max_w > dst_rect.w;
         let y_scroll_enabled = src_max_h > dst_rect.h;
 
-        if !x_scroll_enabled { *scroll_x0 = 0; }
-        if !y_scroll_enabled { *scroll_y0 = 0; }
+        if !x_scroll_enabled {
+            *scroll_x0 = 0;
+        }
+        if !y_scroll_enabled {
+            *scroll_y0 = 0;
+        }
 
         let viewport_rect = &Rect {
             x0: *scroll_x0,
@@ -80,7 +84,6 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
         // Vertical scrollbar
 
         if y_scroll_enabled {
-
             if *y_dragging {
                 *scroll_y0 +=
                     (src_max_h as i64) * input_state.pointer.delta_y / (dst_rect.h as i64);
@@ -133,7 +136,6 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
         // Horizontal scrollbar
 
         if x_scroll_enabled {
-
             if *x_dragging {
                 *scroll_x0 +=
                     (src_max_w as i64) * input_state.pointer.delta_x / (dst_rect.w as i64);
@@ -177,12 +179,11 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
 fn draw_tiles<F: FbViewMut, T: TileRenderer>(
     renderer: &T,
     dst_fb: &mut F,
-    viewport_rect: &Rect,  // Shape of current viewport in the src canvas
+    viewport_rect: &Rect, // Shape of current viewport in the src canvas
     time: f64,
-    tile_cache: &mut TileCache
+    tile_cache: &mut TileCache,
 ) {
-
-    let src_canvas_shape = renderer.shape();  // Shape of the full src canvas
+    let src_canvas_shape = renderer.shape(); // Shape of the full src canvas
     let tile_shape = renderer.tile_shape(); // Shape of individual tiles
 
     let (vw, vh) = (viewport_rect.w, viewport_rect.h);
@@ -193,7 +194,6 @@ fn draw_tiles<F: FbViewMut, T: TileRenderer>(
     let regions = select_tile_regions(&tiles_rects, viewport_rect);
 
     for tile_region in regions.iter() {
-
         let tile_content_id = renderer.content_id(&tile_region.tile_rect);
 
         let render_tile = || {
@@ -201,7 +201,7 @@ fn draw_tiles<F: FbViewMut, T: TileRenderer>(
                 Framebuffer::new_owned(tile_region.tile_rect.w, tile_region.tile_rect.h);
 
             let mut dst_fb = tile_fb.subregion_mut(&tile_fb.shape_as_rect());
-            renderer.render(&mut dst_fb, &tile_region.tile_rect); 
+            renderer.render(&mut dst_fb, &tile_region.tile_rect);
 
             //draw_tile_border(&mut tile_fb);
 
@@ -238,7 +238,6 @@ fn draw_tiles<F: FbViewMut, T: TileRenderer>(
     }
 }
 
-
 fn select_tile_regions(tiles_rects: &Vec<Rect>, viewport_rect: &Rect) -> Vec<TileRegion> {
     let mut regions = Vec::new();
     for tile_rect in tiles_rects {
@@ -260,8 +259,11 @@ struct TileRegion {
     region_rect: Rect,
 }
 
-fn get_tiles(src_canvas_shape: (u32, u32), viewport_shape: (u32, u32), tile_shape: (u32, u32)) -> Vec<Rect> {
-
+fn get_tiles(
+    src_canvas_shape: (u32, u32),
+    viewport_shape: (u32, u32),
+    tile_shape: (u32, u32),
+) -> Vec<Rect> {
     let (cw, ch) = src_canvas_shape;
     let (vw, vh) = viewport_shape;
     let (tile_w, tile_h) = tile_shape;
@@ -284,13 +286,17 @@ fn get_tiles(src_canvas_shape: (u32, u32), viewport_shape: (u32, u32), tile_shap
     let mut tiles_rects = Vec::new();
     for ix in 0..n_tiles_x {
         for iy in 0..n_tiles_y {
-
             let x1 = ix * tile_w;
             let x2 = (ix + 1) * tile_w - 1;
             let y1 = iy * tile_h;
             let y2 = (iy + 1) * tile_h - 1;
 
-            tiles_rects.push(Rect::from_xyxy([x1.into(), y1.into(), x2.into(), y2.into()]))
+            tiles_rects.push(Rect::from_xyxy([
+                x1.into(),
+                y1.into(),
+                x2.into(),
+                y2.into(),
+            ]))
         }
     }
 

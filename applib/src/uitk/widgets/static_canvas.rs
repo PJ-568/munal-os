@@ -1,7 +1,7 @@
+use crate::content::{ContentId, TrackedContent};
 use crate::uitk::UiContext;
-use crate::{Rect, Color};
+use crate::{Color, Rect};
 use crate::{FbView, FbViewMut};
-use crate::content::{TrackedContent, ContentId};
 
 use super::dynamic_canvas::TileRenderer;
 
@@ -20,10 +20,7 @@ impl<'a, F1: FbView> TileRenderer for BufferCopyRenderer<'a, F1> {
     }
 
     fn content_id(&self, viewport_rect: &Rect) -> ContentId {
-        ContentId::from_hash(&(
-            self.src_fb.get_id(),
-            viewport_rect,
-        ))
+        ContentId::from_hash(&(self.src_fb.get_id(), viewport_rect))
     }
 
     fn render<F: FbViewMut>(&self, dst_fb: &mut F, viewport_rect: &Rect) {
@@ -42,7 +39,6 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
         dragging: &mut (bool, bool),
         fill_color: Color,
     ) {
-
         let renderer = BufferCopyRenderer { src_fb, fill_color };
 
         self.dynamic_canvas(dst_rect, &renderer, offsets, dragging)

@@ -3,7 +3,7 @@ use uefi::table::boot::{MemoryMap, MemoryType};
 use x86_64::structures::paging::{mapper::TranslateResult, OffsetPageTable, PageTable, Translate};
 use x86_64::{PhysAddr, VirtAddr};
 
-use super::allocator::{SimpleAllocator};
+use super::allocator::SimpleAllocator;
 
 #[global_allocator]
 pub static ALLOCATOR: SimpleAllocator = SimpleAllocator::new();
@@ -11,7 +11,6 @@ pub static ALLOCATOR: SimpleAllocator = SimpleAllocator::new();
 pub static mut MAPPER: OnceCell<MemoryMapper> = OnceCell::new();
 
 pub fn init_allocator(memory_map: &MemoryMap) {
-
     log::info!("Initializing heap allocator");
 
     let desc = memory_map
@@ -36,7 +35,6 @@ pub fn init_allocator(memory_map: &MemoryMap) {
 
     ALLOCATOR.init(heap_add_virt, heap_size);
 }
-
 
 #[derive(Debug)]
 pub struct MemoryMapper {

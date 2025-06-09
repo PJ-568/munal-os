@@ -1,21 +1,23 @@
 use alloc::string::String;
 
-use crate::drawing::primitives::draw_rect;
-use crate::drawing::text::{draw_rich_slice, format_rich_lines, Font, FormattedRichText, RichText, TextJustification, get_font};
 use crate::content::{ContentId, TrackedContent};
+use crate::drawing::primitives::draw_rect;
+use crate::drawing::text::{
+    draw_rich_slice, format_rich_lines, get_font, Font, FormattedRichText, RichText,
+    TextJustification,
+};
 use crate::Color;
 use crate::Rect;
-use crate::{FbViewMut, FbView};
+use crate::{FbView, FbViewMut};
 
 use crate::uitk::{TileRenderer, UiContext};
 
-use crate::uitk::UuidProvider;
 use crate::uitk::text::{string_input, EditableText};
+use crate::uitk::UuidProvider;
 
 const CURSOR_BLINK_PERIOD: u64 = 1;
 
 impl<'a, F: FbViewMut> UiContext<'a, F> {
-
     pub fn text_box<T: FormattableText>(
         &mut self,
         dst_rect: &Rect,
@@ -25,7 +27,9 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
     ) {
         let prelude: Option<&T> = None;
         let bg_color = self.stylesheet.colors.element;
-        self.text_box_inner(dst_rect, text, bg_color, state, autoscroll, false, prelude, false);
+        self.text_box_inner(
+            dst_rect, text, bg_color, state, autoscroll, false, prelude, false,
+        );
     }
 
     pub fn editable_text_box<T: FormattableText + EditableText, U: FormattableText>(
@@ -37,7 +41,6 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
         allow_newline: bool,
         prelude: Option<&U>,
     ) {
-
         let UiContext {
             input_state,
             uuid_provider,
@@ -48,12 +51,26 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
 
         let old_cursor = state.cursor;
 
-        string_input(text, input_state, allow_newline, &mut state.cursor, *uuid_provider);
+        string_input(
+            text,
+            input_state,
+            allow_newline,
+            &mut state.cursor,
+            *uuid_provider,
+        );
 
         let cursor_changed = state.cursor != old_cursor;
 
-        self.text_box_inner(dst_rect, text, bg_color, state, cursor_changed, autoscroll, prelude, true);
-
+        self.text_box_inner(
+            dst_rect,
+            text,
+            bg_color,
+            state,
+            cursor_changed,
+            autoscroll,
+            prelude,
+            true,
+        );
     }
 
     fn text_box_inner<T: FormattableText, U: FormattableText>(
@@ -67,7 +84,6 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
         prelude: Option<&U>,
         cursor_enabled: bool,
     ) {
-
         let time_sec = (self.time as u64) / 1000;
 
         // Only used if text is not already a RichText
@@ -82,28 +98,25 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
             None => {
                 let rich = text.to_rich_text(color, font);
                 (rich, 0)
-            },
+            }
             Some(prelude) => {
                 let (mut rich_1, cid_1) = prelude.to_rich_text(color, font).to_inner();
                 let (rich_2, cid_2) = text.to_rich_text(color, font).to_inner();
 
                 let prelude_len = rich_1.len();
-                
+
                 rich_1.concat(rich_2);
                 let cid = ContentId::from_hash(&(cid_1, cid_2));
                 let rich = TrackedContent::new_with_id(rich_1, cid);
-                
+
                 (rich, prelude_len)
             }
         };
 
         let formatted = {
-            let formatted = format_rich_lines(rich_text.as_ref(), dst_rect.w - CURSOR_W, state.justif);
-            let content_id = ContentId::from_hash(&(
-                rich_text.get_id(),
-                dst_rect.w,
-                state.justif,
-            ));
+            let formatted =
+                format_rich_lines(rich_text.as_ref(), dst_rect.w - CURSOR_W, state.justif);
+            let content_id = ContentId::from_hash(&(rich_text.get_id(), dst_rect.w, state.justif));
             TrackedContent::new_with_id(formatted, content_id)
         };
 
@@ -114,10 +127,7 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
 
         if dst_rect.check_contains_point(p.x, p.y) {
             let (ox, oy) = state.scroll_offsets;
-            let (x_text, y_text) = (
-                p.x - vr.x0 + ox,
-                p.y - vr.y0 + oy
-            );
+            let (x_text, y_text) = (p.x - vr.x0 + ox, p.y - vr.y0 + oy);
             if let Some(index) = formatted.as_ref().xy_to_index((x_text, y_text)) {
                 if p.left_click_trigger {
                     state.cursor = index - prelude_len;
@@ -140,8 +150,9 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
 
         let formatted_content_id = formatted.get_id();
 
-        let renderer = TextRenderer { 
-            formatted, bg_color,
+        let renderer = TextRenderer {
+            formatted,
+            bg_color,
             cursor: state.cursor,
             cursor_visible: state.cursor_visible,
             shadow_cursor,
@@ -149,7 +160,11 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
         };
 
         if autoscroll {
-            let TextBoxState { content_id, scroll_offsets, .. } = state;
+            let TextBoxState {
+                content_id,
+                scroll_offsets,
+                ..
+            } = state;
             match content_id {
                 Some(content_id) if *content_id == formatted_content_id => (),
                 _ => {
@@ -167,10 +182,7 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
             &mut state.scroll_offsets,
             &mut state.scroll_dragging,
         );
-
-        
     }
-
 }
 
 pub struct TextBoxState {
@@ -186,7 +198,7 @@ pub struct TextBoxState {
 
 impl TextBoxState {
     pub fn new() -> Self {
-        Self { 
+        Self {
             content_id: None,
             scroll_offsets: (0, 0),
             scroll_dragging: (false, false),
@@ -205,11 +217,7 @@ pub trait FormattableText {
 impl FormattableText for TrackedContent<String> {
     fn to_rich_text(&self, color: Color, font: &'static Font) -> TrackedContent<RichText> {
         let rich_text = RichText::from_str(self.as_ref(), color, font, None);
-        let new_id = ContentId::from_hash(&(
-            self.get_id(),
-            color,
-            font.name.as_str(),
-        ));
+        let new_id = ContentId::from_hash(&(self.get_id(), color, font.name.as_str()));
         TrackedContent::new_with_id(rich_text, new_id)
     }
 }
@@ -225,24 +233,24 @@ impl FormattableText for TrackedContent<RichText> {
 pub struct EditableRichText<'a> {
     pub font: &'static Font,
     pub color: Color,
-    pub rich_text: &'a mut TrackedContent<RichText>
+    pub rich_text: &'a mut TrackedContent<RichText>,
 }
 
 impl<'a> EditableText for EditableRichText<'a> {
-
     fn len(&self) -> usize {
         self.rich_text.as_ref().len()
     }
 
     fn insert(&mut self, uuid_provider: &mut UuidProvider, pos: usize, c: char) {
-        self.rich_text.mutate(uuid_provider).insert(pos, c, self.color, self.font);
+        self.rich_text
+            .mutate(uuid_provider)
+            .insert(pos, c, self.color, self.font);
     }
 
     fn remove(&mut self, uuid_provider: &mut UuidProvider, pos: usize) {
         self.rich_text.mutate(uuid_provider).remove(pos);
     }
 }
-
 
 impl<'a> FormattableText for EditableRichText<'a> {
     fn to_rich_text(&self, _color: Color, _font: &'static Font) -> TrackedContent<RichText> {
@@ -264,39 +272,35 @@ const MIN_TILE_W: u32 = 200;
 const TILE_H: u32 = 200;
 
 impl TileRenderer for TextRenderer {
-
     fn shape(&self) -> (u32, u32) {
-
         let FormattedRichText { w, h, .. } = *self.formatted.as_ref();
         (w + CURSOR_W, h)
     }
 
     fn tile_shape(&self) -> (u32, u32) {
-
         let FormattedRichText { w, .. } = *self.formatted.as_ref();
-        (
-            u32::max(w + CURSOR_W, MIN_TILE_W),
-            TILE_H
-        )
+        (u32::max(w + CURSOR_W, MIN_TILE_W), TILE_H)
     }
 
     fn content_id(&self, tile_rect: &Rect) -> ContentId {
-
         let formatted = self.formatted.as_ref();
         let FormattedRichText { w, h, .. } = *formatted;
-        let cursor_h = formatted.lines
+        let cursor_h = formatted
+            .lines
             .last()
-            .map(|l| l.chars.last()).flatten()
+            .map(|l| l.chars.last())
+            .flatten()
             .map(|c| c.font.char_h as u32)
             .unwrap_or(0);
-        let text_rect = Rect { x0: 0, y0: 0, w, h: h + cursor_h};
+        let text_rect = Rect {
+            x0: 0,
+            y0: 0,
+            w,
+            h: h + cursor_h,
+        };
 
         if tile_rect.intersection(&text_rect).is_none() {
-            ContentId::from_hash(&(
-                tile_rect.w,
-                tile_rect.h,
-                self.bg_color,
-            ))
+            ContentId::from_hash(&(tile_rect.w, tile_rect.h, self.bg_color))
         } else {
             ContentId::from_hash(&(
                 tile_rect,
@@ -310,7 +314,6 @@ impl TileRenderer for TextRenderer {
     }
 
     fn render<F: FbViewMut>(&self, dst_fb: &mut F, tile_rect: &Rect) {
-
         let Rect { x0: ox, y0: oy, .. } = *tile_rect;
 
         dst_fb.fill(self.bg_color);
@@ -321,7 +324,6 @@ impl TileRenderer for TextRenderer {
 
         let mut y = 0;
         for line in self.formatted.as_ref().lines.iter() {
-
             let line_x0 = line.x_offset as i64;
 
             // Bounding box of line in source

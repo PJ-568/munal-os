@@ -1,7 +1,7 @@
-use crate::{network::TcpStack, time::SystemClock};
-use rand::rngs::SmallRng;
-use applib::StyleSheet;
 use crate::stats::SystemStats;
+use crate::{network::TcpStack, time::SystemClock};
+use applib::StyleSheet;
+use rand::rngs::SmallRng;
 
 pub struct System {
     pub clock: SystemClock,

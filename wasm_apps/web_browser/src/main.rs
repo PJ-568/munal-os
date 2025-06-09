@@ -9,17 +9,17 @@ use std::fmt::Debug;
 use alloc::collections::BTreeMap;
 use alloc::format;
 use anyhow::Context;
-use html::render_list::RenderItem;
-use lazy_static::lazy_static;
 use applib::{Rect, StyleSheet};
 use core::cell::OnceCell;
 use guestlib::{PixelData, WasmLogger};
+use html::render_list::RenderItem;
+use lazy_static::lazy_static;
 
 use applib::content::TrackedContent;
 use applib::input::Keycode;
 use applib::input::{InputEvent, InputState};
-use applib::uitk::{self, ButtonConfig, UuidProvider, TextBoxState};
 use applib::uitk::layout::{make_horizontal_layout, make_vertical_layout, LayoutItem};
+use applib::uitk::{self, ButtonConfig, TextBoxState, UuidProvider};
 use applib::{Framebuffer, OwnedPixels};
 
 mod dns;
@@ -29,9 +29,7 @@ mod tls;
 
 use html::canvas::html_canvas;
 use html::{
-    parsing::parse_html,
-    block_layout::{compute_block_layout},
-    render_list::compute_render_list,
+    block_layout::compute_block_layout, parsing::parse_html, render_list::compute_render_list,
 };
 use socket::Socket;
 use tls::TlsClient;
@@ -40,17 +38,17 @@ static LOGGER: WasmLogger = WasmLogger;
 const LOGGING_LEVEL: log::LevelFilter = log::LevelFilter::Debug;
 
 lazy_static! {
-    pub static ref HN_ICON: Framebuffer<OwnedPixels> = 
+    pub static ref HN_ICON: Framebuffer<OwnedPixels> =
         Framebuffer::from_png(include_bytes!("../icons/websites/hackernews.png"));
-    pub static ref MF_WEBSITE_ICON: Framebuffer<OwnedPixels> = 
+    pub static ref MF_WEBSITE_ICON: Framebuffer<OwnedPixels> =
         Framebuffer::from_png(include_bytes!("../icons/websites/mfwebsite.png"));
-    pub static ref EX_WEBSITE_ICON: Framebuffer<OwnedPixels> = 
+    pub static ref EX_WEBSITE_ICON: Framebuffer<OwnedPixels> =
         Framebuffer::from_png(include_bytes!("../icons/websites/example.png"));
-    pub static ref ARROW_RIGHT_ICON: Framebuffer<OwnedPixels> = 
+    pub static ref ARROW_RIGHT_ICON: Framebuffer<OwnedPixels> =
         Framebuffer::from_png(include_bytes!("../icons/arrow_right.png"));
-    pub static ref RELOAD_ICON: Framebuffer<OwnedPixels> = 
+    pub static ref RELOAD_ICON: Framebuffer<OwnedPixels> =
         Framebuffer::from_png(include_bytes!("../icons/reload.png"));
-    pub static ref HOME_ICON: Framebuffer<OwnedPixels> = 
+    pub static ref HOME_ICON: Framebuffer<OwnedPixels> =
         Framebuffer::from_png(include_bytes!("../icons/home.png"));
 }
 
@@ -136,7 +134,9 @@ impl Debug for RequestState {
             RequestState::Home => write!(f, "Home"),
             RequestState::Idle { .. } => write!(f, "Idle"),
             RequestState::Dns {
-                http_target, dns_state, ..
+                http_target,
+                dns_state,
+                ..
             } => write!(f, "DNS {:?} {:?}", http_target, dns_state),
             RequestState::Https { https_state, .. } => write!(f, "HTTPS {:?}", https_state),
             RequestState::Render { .. } => write!(f, "Render"),
@@ -230,7 +230,7 @@ pub fn step() {
         &stylesheet,
         &input_state,
         uuid_provider,
-        time
+        time,
     );
 
     let ui_layout = compute_ui_layout(&stylesheet, &win_rect);
@@ -250,7 +250,7 @@ pub fn step() {
             rect: ui_layout.reload_button_rect.clone(),
             icon: Some(("reload_icon".to_owned(), &RELOAD_ICON)),
             ..Default::default()
-        })
+        }),
     };
 
     uitk_context.editable_text_box(
@@ -276,11 +276,19 @@ pub fn step() {
 
     let url_bar_go = match buttons_state.go || check_enter_pressed(&input_state) {
         false => None,
-        true => Some(state.url_text.as_ref().to_owned())
+        true => Some(state.url_text.as_ref().to_owned()),
     };
 
     let prev_state_debug = format!("{:?}", state.request_state);
-    try_update_request_state(state, &stylesheet, url_bar_go, &buttons_state, &ui_layout, &input_state, time);
+    try_update_request_state(
+        state,
+        &stylesheet,
+        url_bar_go,
+        &buttons_state,
+        &ui_layout,
+        &input_state,
+        time,
+    );
     let new_state_debug = format!("{:?}", state.request_state);
 
     if new_state_debug != prev_state_debug {
@@ -293,16 +301,12 @@ pub fn step() {
 }
 
 fn compute_ui_layout(stylesheet: &StyleSheet, win_rect: &Rect) -> UiLayout {
-
     const BUTTON_SIZE: u32 = 50;
 
     let layout_1 = make_vertical_layout(
         &win_rect.zero_origin().offset(-(stylesheet.margin as i64)),
         stylesheet.margin,
-        &[
-            LayoutItem::Fixed { size: BUTTON_SIZE },
-            LayoutItem::Float
-        ]
+        &[LayoutItem::Fixed { size: BUTTON_SIZE }, LayoutItem::Float],
     );
 
     let layout_2 = make_horizontal_layout(
@@ -313,17 +317,14 @@ fn compute_ui_layout(stylesheet: &StyleSheet, win_rect: &Rect) -> UiLayout {
             LayoutItem::Fixed { size: BUTTON_SIZE },
             LayoutItem::Float,
             LayoutItem::Fixed { size: BUTTON_SIZE },
-        ]);
+        ],
+    );
 
     let layout_3 = make_vertical_layout(
         &layout_2[2],
         stylesheet.margin,
-        &[
-            LayoutItem::Float,
-            LayoutItem::Float,
-        ]
+        &[LayoutItem::Float, LayoutItem::Float],
     );
-    
 
     UiLayout {
         topbar_rect: layout_1[0].clone(),
@@ -358,7 +359,15 @@ fn try_update_request_state(
     input_state: &InputState,
     time: f64,
 ) {
-    match update_request_state(state, stylesheet, url_bar_go, buttons_state, ui_layout, input_state, time) {
+    match update_request_state(
+        state,
+        stylesheet,
+        url_bar_go,
+        buttons_state,
+        ui_layout,
+        input_state,
+        time,
+    ) {
         Ok(_) => (),
         Err(err) => {
             log::error!("{}", err);
@@ -371,14 +380,10 @@ fn try_update_request_state(
 }
 
 fn make_error_html(error: anyhow::Error) -> String {
-
     let traceback: Vec<String> = error
         .chain()
         .enumerate()
-        .map(|(i, sub_err)| format!(
-            "<tr><td>{}: {}</td></tr>\n",
-            i, sub_err
-        ))
+        .map(|(i, sub_err)| format!("<tr><td>{}: {}</td></tr>\n", i, sub_err))
         .collect();
 
     format!(
@@ -402,9 +407,7 @@ fn update_request_state(
     time: f64,
 ) -> anyhow::Result<()> {
     match &mut state.request_state {
-
         RequestState::Home => {
-
             const BUTTON_H: u32 = 50;
             const BUTTON_W: u32 = 400;
 
@@ -416,15 +419,15 @@ fn update_request_state(
             let favorites = [
                 Favorite {
                     link: "https://motherfuckingwebsite.com",
-                    icon: &MF_WEBSITE_ICON
+                    icon: &MF_WEBSITE_ICON,
                 },
                 Favorite {
                     link: "https://news.ycombinator.com",
-                    icon: &HN_ICON
+                    icon: &HN_ICON,
                 },
                 Favorite {
                     link: "https://example.com",
-                    icon: &EX_WEBSITE_ICON
+                    icon: &EX_WEBSITE_ICON,
                 },
             ];
             let canvas_rect = &ui_layout.canvas_rect;
@@ -432,28 +435,42 @@ fn update_request_state(
             let row_h = canvas_rect.h / (2 * favorites.len() + 1) as u32;
 
             let x0 = {
-                let r = Rect { x0: 0, y0: 0, w: BUTTON_W, h: BUTTON_H };
+                let r = Rect {
+                    x0: 0,
+                    y0: 0,
+                    w: BUTTON_W,
+                    h: BUTTON_H,
+                };
                 r.align_to_rect_horiz(&ui_layout.canvas_rect).x0
             };
-    
+
             let mut framebuffer = state.pixel_data.get_framebuffer();
             let mut uitk_context = state.ui_store.get_context(
                 &mut framebuffer,
                 &stylesheet,
                 input_state,
                 &mut state.uuid_provider,
-                time
+                time,
             );
 
             let mut y = canvas_rect.y0 + row_h as i64;
             let mut clicked_url = None;
 
             for fav in favorites {
-
-                let row_rect = Rect { x0, y0: y, w: BUTTON_W, h: row_h };
-                let button_rect = Rect { x0, y0: y, w: BUTTON_W, h: BUTTON_H }
-                    .align_to_rect_vert(&row_rect);
-                let clicked = uitk_context.button(&ButtonConfig { 
+                let row_rect = Rect {
+                    x0,
+                    y0: y,
+                    w: BUTTON_W,
+                    h: row_h,
+                };
+                let button_rect = Rect {
+                    x0,
+                    y0: y,
+                    w: BUTTON_W,
+                    h: BUTTON_H,
+                }
+                .align_to_rect_vert(&row_rect);
+                let clicked = uitk_context.button(&ButtonConfig {
                     rect: button_rect,
                     text: fav.link.to_string(),
                     icon: Some((fav.link.to_string(), fav.icon)),
@@ -467,27 +484,29 @@ fn update_request_state(
             }
 
             let url = {
-                if let Some(url) = clicked_url { Some(url.to_owned()) }
-                else if let Some(url) = url_bar_go { Some(url) }
-                else { None }
+                if let Some(url) = clicked_url {
+                    Some(url.to_owned())
+                } else if let Some(url) = url_bar_go {
+                    Some(url)
+                } else {
+                    None
+                }
             };
 
             if let Some(url) = url {
                 let http_target = parse_url(&url)?;
                 initiate_redirect(state, http_target)?;
             }
-        },
+        }
 
         RequestState::Idle {
             http_target,
             render_list,
         } => {
-
             if buttons_state.home {
                 state.request_state = RequestState::Home;
                 state.pixel_data.force_refresh();
             } else {
-
                 let mut framebuffer = state.pixel_data.get_framebuffer();
 
                 let mut uitk_context = state.ui_store.get_context(
@@ -495,7 +514,7 @@ fn update_request_state(
                     &stylesheet,
                     input_state,
                     &mut state.uuid_provider,
-                    time
+                    time,
                 );
 
                 let link_hover = html_canvas(
@@ -513,13 +532,12 @@ fn update_request_state(
                     } else if buttons_state.reload {
                         http_target.clone()
                     } else if input_state.pointer.left_click_trigger {
-
                         let mut new_http_target = None;
                         if let Some(href) = link_hover {
                             if let Some(http_target) = http_target {
                                 if !href.starts_with(SCHEME) {
-                                    new_http_target = Some(HttpTarget { 
-                                        host:  http_target.host.clone(),
+                                    new_http_target = Some(HttpTarget {
+                                        host: http_target.host.clone(),
                                         path: format!("/{}", href),
                                     });
                                 }
@@ -527,7 +545,7 @@ fn update_request_state(
                         }
 
                         new_http_target
-                    } else  {
+                    } else {
                         None
                     }
                 };
@@ -658,7 +676,6 @@ fn update_request_state(
         },
 
         RequestState::Render { http_target, html } => {
-
             let html_tree = parse_html(html)?;
             // log::debug!("{}", html_tree.plot());
 
@@ -683,10 +700,12 @@ fn update_request_state(
     Ok(())
 }
 
-fn initiate_redirect(state: &mut AppState, http_target: HttpTarget)  -> anyhow::Result<()> {
-
+fn initiate_redirect(state: &mut AppState, http_target: HttpTarget) -> anyhow::Result<()> {
     let s_ref = state.url_text.mutate(&mut state.uuid_provider);
-    let _ = core::mem::replace(s_ref, format!("{}{}{}", SCHEME, http_target.host, http_target.path));
+    let _ = core::mem::replace(
+        s_ref,
+        format!("{}{}{}", SCHEME, http_target.host, http_target.path),
+    );
     let dns_socket = Socket::new(DNS_SERVER_IP, 53)?;
     state.request_state = RequestState::Dns {
         http_target: http_target,
@@ -771,5 +790,8 @@ fn parse_url(url: &str) -> anyhow::Result<HttpTarget> {
         None => (s, "/"),
     };
 
-    Ok(HttpTarget { host: host.to_owned(), path: path.to_owned() })
+    Ok(HttpTarget {
+        host: host.to_owned(),
+        path: path.to_owned(),
+    })
 }

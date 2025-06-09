@@ -24,11 +24,8 @@ impl<T> TrackedContent<T> {
         }
     }
 
-    pub fn new_with_id(inner: T, content_id: ContentId)-> Self {
-        Self {
-            inner,
-            content_id,
-        }
+    pub fn new_with_id(inner: T, content_id: ContentId) -> Self {
+        Self { inner, content_id }
     }
 
     pub fn mutate<'a>(&'a mut self, uuid_provider: &mut UuidProvider) -> &'a mut T {
@@ -51,17 +48,14 @@ impl<T> TrackedContent<T> {
 }
 
 impl<T: Hash> TrackedContent<T> {
-
     pub fn new_from_hash(inner: T) -> Self {
-
         let cid = ContentId::from_hash(&inner);
 
         Self {
             inner,
-            content_id: cid
+            content_id: cid,
         }
     }
-
 }
 
 pub struct UuidProvider {

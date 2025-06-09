@@ -1,6 +1,6 @@
 use crate::app::AppDescriptor;
-use applib::{Framebuffer, OwnedPixels, Rect, Color};
-use applib::{StyleSheet, StyleSheetColors, TextSizes, StyleSheetText};
+use applib::{Color, Framebuffer, OwnedPixels, Rect};
+use applib::{StyleSheet, StyleSheetColors, StyleSheetText, TextSizes};
 use lazy_static::lazy_static;
 
 lazy_static! {
@@ -8,7 +8,7 @@ lazy_static! {
     //
     // Wallpaper
 
-    pub static ref WALLPAPER: Framebuffer<OwnedPixels> = 
+    pub static ref WALLPAPER: Framebuffer<OwnedPixels> =
         Framebuffer::from_png(include_bytes!("../../wallpaper.png"));
 
 

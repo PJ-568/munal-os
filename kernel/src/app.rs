@@ -7,16 +7,16 @@ use applib::{FbView, StyleSheet};
 
 use crate::shell::{pie_menu, PieDrawCalls, PieMenuEntry};
 use crate::stats::SystemStats;
+use applib::content::TrackedContent;
 use applib::drawing::primitives::{draw_rect, draw_rect_outline};
 use applib::drawing::text::{draw_line_in_rect, draw_str, get_font, Font, TextJustification};
 use applib::geometry::{Point2D, Vec2D};
 use applib::uitk::{self, GraphSeries, TextBoxState};
 use applib::{input::InputState, Color, FbViewMut, Framebuffer, OwnedPixels, Rect};
-use applib::content::TrackedContent;
 
-use crate::{resources, TOPBAR_H};
 use crate::system::System;
 use crate::wasm::{WasmApp, WasmEngine};
+use crate::{resources, TOPBAR_H};
 
 #[derive(Clone)]
 pub struct AppDescriptor {
@@ -46,7 +46,7 @@ pub enum AppsInteractionState {
         anchor: Point2D<i64>,
 
         // In "toggle" mode, another click is required to get out of the TitlebarHold state
-        toggle: bool,  
+        toggle: bool,
     },
     ResizeHold {
         app_name: &'static str,
@@ -61,12 +61,15 @@ pub enum AppsInteractionState {
 }
 
 pub struct AppsManager {
-    z_ordered: Vec<App>
+    z_ordered: Vec<App>,
 }
 
 impl AppsManager {
     fn get_by_name(&mut self, app_name: &str) -> &mut App {
-        self.z_ordered.iter_mut().find(|app| app.descriptor.name == app_name).expect("Unknown app")
+        self.z_ordered
+            .iter_mut()
+            .find(|app| app.descriptor.name == app_name)
+            .expect("Unknown app")
     }
 }
 
@@ -80,12 +83,14 @@ pub struct App {
 
 pub enum AppState {
     Init,
-    Active { 
+    Active {
         paused: bool,
         wasm_app: WasmApp,
         audit_mode: AppAuditMode,
     },
-    Crashed { error: anyhow::Error }
+    Crashed {
+        error: anyhow::Error,
+    },
 }
 
 pub enum AppAuditMode {
@@ -102,10 +107,11 @@ impl AppAuditMode {
         stats: &SystemStats,
         console_log: &TrackedContent<String>,
     ) {
-
         match self {
             AppAuditMode::Disabled => return,
-            AppAuditMode::Enabled { scrollable_text_state } => {
+            AppAuditMode::Enabled {
+                scrollable_text_state,
+            } => {
                 app_audit_window(
                     uitk_context,
                     app_name,
@@ -120,17 +126,23 @@ impl AppAuditMode {
 }
 
 impl AppsManager {
-
     pub fn new(apps: Vec<App>) -> Self {
         Self { z_ordered: apps }
     }
 
     fn get_mut(&mut self, app_name: &'static str) -> &mut App {
-        self.z_ordered.iter_mut().find(|app| app.descriptor.name == app_name).unwrap()
+        self.z_ordered
+            .iter_mut()
+            .find(|app| app.descriptor.name == app_name)
+            .unwrap()
     }
 
     fn set_on_top(&mut self, app_name: &'static str) {
-        let index = self.z_ordered.iter().position(|app| app.descriptor.name == app_name).unwrap();
+        let index = self
+            .z_ordered
+            .iter()
+            .position(|app| app.descriptor.name == app_name)
+            .unwrap();
         let app = self.z_ordered.remove(index);
         self.z_ordered.push(app);
     }
@@ -144,7 +156,6 @@ pub fn run_apps<F: FbViewMut>(
     input_state: &InputState,
     interaction_state: &mut AppsInteractionState,
 ) {
-
     let stylesheet = system.stylesheet.clone();
     let pointer = &input_state.pointer;
     let mut pie_draw_calls: Option<PieDrawCalls> = None;
@@ -152,20 +163,28 @@ pub fn run_apps<F: FbViewMut>(
     //
     // Hover
 
-    let hover_state = apps_manager.z_ordered.iter().rev()
+    let hover_state = apps_manager
+        .z_ordered
+        .iter()
+        .rev()
         .map(|app| {
             let deco = compute_decorations(app, input_state);
             (app, deco)
         })
         .find_map(|(app, deco)| {
-
             let app_name = app.descriptor.name;
 
-            if !app.is_open { None }
-            else if deco.titlebar_hover { Some((app_name, HoverKind::Titlebar)) }
-            else if deco.resize_hover { Some((app_name, HoverKind::Resize)) }
-            else if deco.window_hover { Some((app_name, HoverKind::Window)) }
-            else { None }
+            if !app.is_open {
+                None
+            } else if deco.titlebar_hover {
+                Some((app_name, HoverKind::Titlebar))
+            } else if deco.resize_hover {
+                Some((app_name, HoverKind::Resize))
+            } else if deco.window_hover {
+                Some((app_name, HoverKind::Window))
+            } else {
+                None
+            }
         });
 
     //
@@ -174,61 +193,86 @@ pub fn run_apps<F: FbViewMut>(
     let is = interaction_state;
 
     match *is {
-
         AppsInteractionState::Idle => match hover_state {
             None if pointer.right_click_trigger => {
-                let anchor = Point2D { x: pointer.x, y: pointer.y };
+                let anchor = Point2D {
+                    x: pointer.x,
+                    y: pointer.y,
+                };
                 *is = AppsInteractionState::PieDesktopMenu { anchor };
-            },
+            }
             None => (),
-            Some((app_name, hover_kind)) => *is = AppsInteractionState::AppHover { app_name, hover_kind }
+            Some((app_name, hover_kind)) => {
+                *is = AppsInteractionState::AppHover {
+                    app_name,
+                    hover_kind,
+                }
+            }
         },
 
         AppsInteractionState::AppHover { app_name, .. } if pointer.right_click_trigger => {
-            let anchor = Point2D { x: pointer.x, y: pointer.y };
+            let anchor = Point2D {
+                x: pointer.x,
+                y: pointer.y,
+            };
             apps_manager.set_on_top(app_name);
             *is = AppsInteractionState::PieAppMenu { app_name, anchor };
-        },
+        }
 
-        AppsInteractionState::AppHover { app_name, hover_kind } if pointer.left_click_trigger => {
-
+        AppsInteractionState::AppHover {
+            app_name,
+            hover_kind,
+        } if pointer.left_click_trigger => {
             apps_manager.set_on_top(app_name);
 
             match hover_kind {
                 HoverKind::Titlebar => {
                     let app = apps_manager.get_mut(app_name);
                     let anchor = get_hold_anchor(pointer, &app.rect);
-                    *is =  AppsInteractionState::TitlebarHold { app_name, anchor, toggle: false };
-                },
+                    *is = AppsInteractionState::TitlebarHold {
+                        app_name,
+                        anchor,
+                        toggle: false,
+                    };
+                }
 
                 HoverKind::Resize => *is = AppsInteractionState::ResizeHold { app_name },
 
                 HoverKind::Window => (),
             }
-        },
+        }
 
         AppsInteractionState::AppHover { .. } => match hover_state {
             None => *is = AppsInteractionState::Idle,
-            Some((app_name, hover_kind)) => *is = AppsInteractionState::AppHover { app_name, hover_kind }
+            Some((app_name, hover_kind)) => {
+                *is = AppsInteractionState::AppHover {
+                    app_name,
+                    hover_kind,
+                }
+            }
         },
 
         AppsInteractionState::TitlebarHold { toggle, .. } if !toggle && !pointer.left_clicked => {
             *is = AppsInteractionState::Idle;
-        },
-        
-        AppsInteractionState::TitlebarHold { toggle, .. } if toggle && (pointer.left_click_trigger ||  pointer.right_click_trigger) => {
-            *is = AppsInteractionState::Idle;
-        },
+        }
 
-        AppsInteractionState::TitlebarHold { app_name, anchor, .. } => {
+        AppsInteractionState::TitlebarHold { toggle, .. }
+            if toggle && (pointer.left_click_trigger || pointer.right_click_trigger) =>
+        {
+            *is = AppsInteractionState::Idle;
+        }
+
+        AppsInteractionState::TitlebarHold {
+            app_name, anchor, ..
+        } => {
             let app = apps_manager.get_mut(app_name);
             app.rect.x0 = pointer.x - anchor.x;
             app.rect.y0 = pointer.y - anchor.y;
-        },
+        }
 
         AppsInteractionState::ResizeHold { .. } if !pointer.left_clicked => {
             *is = AppsInteractionState::Idle;
-        },
+        }
 
         AppsInteractionState::ResizeHold { app_name } => {
             let app = apps_manager.get_mut(app_name);
@@ -237,31 +281,28 @@ pub fn run_apps<F: FbViewMut>(
             let x2 = i64::max(x1 + min_w as i64, pointer.x);
             let y2 = i64::max(y1 + min_h as i64, pointer.y);
             app.rect = Rect::from_xyxy([x1, y1, x2, y2]);
-        },
+        }
 
         AppsInteractionState::PieAppMenu { app_name, anchor } => {
-
             let app = apps_manager.get_mut(app_name);
 
             let entries = [
                 match &app.app_state {
-                    AppState::Active { audit_mode, .. } => {
-                        match audit_mode {
-                            AppAuditMode::Disabled => PieMenuEntry::Button {
-                                icon: &resources::INSPECT_ICON,
-                                color: stylesheet.colors.purple,
-                                text: "Open audit".to_owned(),
-                                text_color: stylesheet.colors.text,
-                                weight: 1.0,
-                            },
-                            AppAuditMode::Enabled { .. } => PieMenuEntry::Button {
-                                icon: &resources::INSPECT_ICON,
-                                color: stylesheet.colors.purple,
-                                text: "Close audit".to_owned(),
-                                text_color: stylesheet.colors.text,
-                                weight: 1.0,
-                            },
-                        }
+                    AppState::Active { audit_mode, .. } => match audit_mode {
+                        AppAuditMode::Disabled => PieMenuEntry::Button {
+                            icon: &resources::INSPECT_ICON,
+                            color: stylesheet.colors.purple,
+                            text: "Open audit".to_owned(),
+                            text_color: stylesheet.colors.text,
+                            weight: 1.0,
+                        },
+                        AppAuditMode::Enabled { .. } => PieMenuEntry::Button {
+                            icon: &resources::INSPECT_ICON,
+                            color: stylesheet.colors.purple,
+                            text: "Close audit".to_owned(),
+                            text_color: stylesheet.colors.text,
+                            weight: 1.0,
+                        },
                     },
                     _ => PieMenuEntry::Spacer { weight: 1.0 },
                 },
@@ -303,7 +344,7 @@ pub fn run_apps<F: FbViewMut>(
                     text_color: stylesheet.colors.text,
                     weight: 1.0,
                 },
-                PieMenuEntry::Spacer { weight: 3.0 }
+                PieMenuEntry::Spacer { weight: 3.0 },
             ];
 
             let (selected, draw_calls) = pie_menu(uitk_context, &entries, anchor);
@@ -314,49 +355,61 @@ pub fn run_apps<F: FbViewMut>(
                 Some("Close") => {
                     app.is_open = false;
                     *is = AppsInteractionState::Idle;
-                },
+                }
                 Some("Move") => {
                     let anchor = get_hold_anchor(pointer, &app.rect);
-                    *is = AppsInteractionState::TitlebarHold { app_name, anchor, toggle: true };
-                },
+                    *is = AppsInteractionState::TitlebarHold {
+                        app_name,
+                        anchor,
+                        toggle: true,
+                    };
+                }
                 Some("Reload") => {
                     log::info!("De-loading app {}", app.descriptor.name);
                     app.app_state = AppState::Init;
                     *is = AppsInteractionState::Idle;
-                },
-                Some("Pause") => if let AppState::Active { paused, .. } = &mut app.app_state {
-                    *paused = true;
-                    *is = AppsInteractionState::Idle;
-                },
-                Some("Resume") => if let AppState::Active { paused, .. } = &mut app.app_state {
-                    *paused = false;
-                    *is = AppsInteractionState::Idle;
-                },
-                Some("Open audit") => if let AppState::Active { audit_mode, .. } = &mut app.app_state {
-                    *audit_mode = AppAuditMode::Enabled { 
-                        scrollable_text_state: TextBoxState::new()
-                    };
-                    *is = AppsInteractionState::Idle;
-                },
-                Some("Close audit") => if let AppState::Active { audit_mode, .. } = &mut app.app_state {
-                    *audit_mode = AppAuditMode::Disabled;
-                    *is = AppsInteractionState::Idle;
-                },
+                }
+                Some("Pause") => {
+                    if let AppState::Active { paused, .. } = &mut app.app_state {
+                        *paused = true;
+                        *is = AppsInteractionState::Idle;
+                    }
+                }
+                Some("Resume") => {
+                    if let AppState::Active { paused, .. } = &mut app.app_state {
+                        *paused = false;
+                        *is = AppsInteractionState::Idle;
+                    }
+                }
+                Some("Open audit") => {
+                    if let AppState::Active { audit_mode, .. } = &mut app.app_state {
+                        *audit_mode = AppAuditMode::Enabled {
+                            scrollable_text_state: TextBoxState::new(),
+                        };
+                        *is = AppsInteractionState::Idle;
+                    }
+                }
+                Some("Close audit") => {
+                    if let AppState::Active { audit_mode, .. } = &mut app.app_state {
+                        *audit_mode = AppAuditMode::Disabled;
+                        *is = AppsInteractionState::Idle;
+                    }
+                }
 
                 _ if pointer.right_click_trigger || pointer.left_click_trigger => {
                     *is = AppsInteractionState::Idle;
                 }
                 _ => (),
             }
-        },
+        }
 
         AppsInteractionState::PieDesktopMenu { anchor } => {
-
             // Sorting apps by name to ensure consistent order
             let mut sorted_apps: Vec<&mut App> = apps_manager.z_ordered.iter_mut().collect();
             sorted_apps.sort_by_key(|app| app.descriptor.name);
 
-            let entries: Vec<PieMenuEntry> = sorted_apps.iter()
+            let entries: Vec<PieMenuEntry> = sorted_apps
+                .iter()
                 .map(|app| PieMenuEntry::Button {
                     icon: app.descriptor.icon,
                     color: stylesheet.colors.background,
@@ -372,7 +425,6 @@ pub fn run_apps<F: FbViewMut>(
 
             match selected {
                 Some(selected_app_name) => {
-
                     let app = apps_manager.get_by_name(selected_app_name);
 
                     let deco = compute_decorations(app, input_state);
@@ -395,19 +447,14 @@ pub fn run_apps<F: FbViewMut>(
         }
     }
 
-
     //
     // Step and draw apps
 
-    let font = get_font(
-        &stylesheet.text.font_family(),
-        stylesheet.text.sizes.medium,
-    );
+    let font = get_font(&stylesheet.text.font_family(), stylesheet.text.sizes.medium);
 
     let n = apps_manager.z_ordered.len();
 
     for (i, app) in apps_manager.z_ordered.iter_mut().enumerate() {
-
         if !app.is_open {
             continue;
         }
@@ -416,21 +463,26 @@ pub fn run_apps<F: FbViewMut>(
         let deco = compute_decorations(&app, input_state);
 
         let highlight = match *is {
-            AppsInteractionState::AppHover { 
+            AppsInteractionState::AppHover {
                 app_name: hover_app_name,
-                hover_kind
+                hover_kind,
             } => hover_app_name == *app_name && hover_kind == HoverKind::Titlebar,
             _ => false,
         };
 
         let is_foreground = i == n - 1;
 
-        draw_decorations(uitk_context.fb, &stylesheet, font, &app.descriptor, &deco, highlight);
-    
+        draw_decorations(
+            uitk_context.fb,
+            &stylesheet,
+            font,
+            &app.descriptor,
+            &deco,
+            highlight,
+        );
+
         match &mut app.app_state {
-
             AppState::Init => {
-
                 let desc = &app.descriptor;
 
                 log::info!("Initializing app {}", desc.name);
@@ -443,11 +495,18 @@ pub fn run_apps<F: FbViewMut>(
                     &app.rect,
                 );
 
-                app.app_state = AppState::Active { wasm_app, audit_mode: AppAuditMode::Disabled, paused: false };
-            },
+                app.app_state = AppState::Active {
+                    wasm_app,
+                    audit_mode: AppAuditMode::Disabled,
+                    paused: false,
+                };
+            }
 
-            AppState::Active { wasm_app, audit_mode, paused } => {
-
+            AppState::Active {
+                wasm_app,
+                audit_mode,
+                paused,
+            } => {
                 if *paused {
                     draw_line_in_rect(
                         uitk_context.fb,
@@ -458,53 +517,69 @@ pub fn run_apps<F: FbViewMut>(
                         TextJustification::Center,
                     );
                 }
-                
-                let wasm_res = wasm_app.step(system, uitk_context.uuid_provider, input_state, &app.rect, is_foreground, *paused);
+
+                let wasm_res = wasm_app.step(
+                    system,
+                    uitk_context.uuid_provider,
+                    input_state,
+                    &app.rect,
+                    is_foreground,
+                    *paused,
+                );
 
                 match wasm_res {
-                    Ok(()) => if let Some(app_fb) = wasm_app.get_framebuffer() {
+                    Ok(()) => {
+                        if let Some(app_fb) = wasm_app.get_framebuffer() {
+                            // To avoid visual glitches when resizing a paused app
+                            let (src_w, src_h) = app_fb.shape();
+                            let Rect {
+                                w: dst_w, h: dst_h, ..
+                            } = deco.content_rect;
+                            if src_w < dst_w || src_h < dst_h {
+                                draw_rect(
+                                    uitk_context.fb,
+                                    &deco.content_rect,
+                                    Color::rgba(0, 0, 0, 200),
+                                    true,
+                                );
+                            }
 
-                        // To avoid visual glitches when resizing a paused app
-                        let (src_w, src_h) = app_fb.shape();
-                        let Rect { w: dst_w, h: dst_h, .. } = deco.content_rect;
-                        if src_w < dst_w || src_h < dst_h {
-                            draw_rect(
-                                uitk_context.fb,
-                                &deco.content_rect,
-                                Color::rgba(0, 0, 0, 200),
-                                true
+                            let src = app_fb.subregion(&Rect {
+                                x0: 0,
+                                y0: 0,
+                                w: dst_w,
+                                h: dst_h,
+                            });
+
+                            uitk_context
+                                .fb
+                                .copy_from_fb(&src, deco.content_rect.origin(), false);
+
+                            audit_mode.audit_window(
+                                uitk_context,
+                                &app.descriptor.name,
+                                &deco,
+                                &system.stats,
+                                wasm_app.get_console_output(),
                             );
                         }
-
-                        let src = app_fb.subregion(&Rect { x0: 0, y0: 0, w: dst_w, h: dst_h});
-
-                        uitk_context.fb.copy_from_fb(&src, deco.content_rect.origin(), false);
-
-                        audit_mode.audit_window(
-                            uitk_context,
-                            &app.descriptor.name,
-                            &deco,
-                            &system.stats,
-                            wasm_app.get_console_output(),
-                        );
-
-                    },
+                    }
                     Err(error) => app.app_state = AppState::Crashed { error },
                 }
-            },
+            }
 
             AppState::Crashed { error } => {
-
                 let (x0, y0) = deco.content_rect.origin();
                 draw_str(
                     uitk_context.fb,
                     &format!("{:?}", error),
-                    x0, y0,
+                    x0,
+                    y0,
                     font,
                     Color::WHITE,
-                    None
+                    None,
                 );
-            },
+            }
         }
     }
 
@@ -527,7 +602,6 @@ struct AppDecorations {
     handle_h: u32,
 }
 
-
 fn app_audit_window<F: FbViewMut>(
     uitk_context: &mut uitk::UiContext<F>,
     app_name: &str,
@@ -536,7 +610,6 @@ fn app_audit_window<F: FbViewMut>(
     console_log: &TrackedContent<String>,
     scrollable_text_state: &mut TextBoxState,
 ) {
-
     const ROW_H: u32 = 100;
     const AUDIT_WIN_W: u32 = 300;
     const MIN_AUDIT_WIN_H: u32 = 100;
@@ -554,10 +627,14 @@ fn app_audit_window<F: FbViewMut>(
     let net_recv_data = stats.get_app_history(app_name, |dp| dp.net_recv as f32);
     let net_sent_data = stats.get_app_history(app_name, |dp| dp.net_sent as f32);
 
-    let frametime_avg = frametime_data.iter().fold(0.0, |acc, v| acc + v / frametime_data.len() as f32);
+    let frametime_avg = frametime_data
+        .iter()
+        .fold(0.0, |acc, v| acc + v / frametime_data.len() as f32);
     let frametime_frac = frametime_avg / target_frametime;
 
-    let mem_avg = mem_data.iter().fold(0.0, |acc, v| acc + v / mem_data.len() as f32);
+    let mem_avg = mem_data
+        .iter()
+        .fold(0.0, |acc, v| acc + v / mem_data.len() as f32);
     let mem_frac = mem_avg / stats.heap_total as f32;
 
     let history_duration_sec = target_frametime * net_recv_data.len() as f32 / 1000.0;
@@ -574,47 +651,52 @@ fn app_audit_window<F: FbViewMut>(
     let graph_specs = [
         AuditGraph {
             title: "Frametime usage",
-            subtitle: &format!("{:.1}ms - {:.1}% of system", frametime_avg, frametime_frac * 100.0),
+            subtitle: &format!(
+                "{:.1}ms - {:.1}% of system",
+                frametime_avg,
+                frametime_frac * 100.0
+            ),
             max_val: 1000.0 / 60.0,
-            series: &[
-                uitk::GraphSeries {
-                    agg_mode: uitk::GraphAggMode::MAX,
-                    data: &frametime_data,
-                    color: Color::RED
-                }
-            ]
+            series: &[uitk::GraphSeries {
+                agg_mode: uitk::GraphAggMode::MAX,
+                data: &frametime_data,
+                color: Color::RED,
+            }],
         },
         AuditGraph {
             title: "Memory usage",
-            subtitle: &format!("{:.0}MB - {:.1}% of system", mem_avg / 1_000_000.0, mem_frac * 100.0),
+            subtitle: &format!(
+                "{:.0}MB - {:.1}% of system",
+                mem_avg / 1_000_000.0,
+                mem_frac * 100.0
+            ),
             max_val: 100_000_000.0,
-            series: &[
-                uitk::GraphSeries {
-                    agg_mode: uitk::GraphAggMode::MAX,
-                    data: &mem_data,
-                    color: Color::GREEN
-                }
-            ]
+            series: &[uitk::GraphSeries {
+                agg_mode: uitk::GraphAggMode::MAX,
+                data: &mem_data,
+                color: Color::GREEN,
+            }],
         },
         AuditGraph {
             title: "Network",
             subtitle: &format!(
                 "up {:.1} down {:.1} kB/s",
-                net_sent_rate / 1000.0, net_recv_rate / 1000.0, 
+                net_sent_rate / 1000.0,
+                net_recv_rate / 1000.0,
             ),
             max_val: 1_000.0,
             series: &[
                 uitk::GraphSeries {
                     agg_mode: uitk::GraphAggMode::SUM,
                     data: &net_recv_data,
-                    color: Color::BLUE
+                    color: Color::BLUE,
                 },
                 uitk::GraphSeries {
                     agg_mode: uitk::GraphAggMode::SUM,
                     data: &net_sent_data,
-                    color: Color::YELLOW
+                    color: Color::YELLOW,
                 },
-            ]
+            ],
         },
     ];
 
@@ -626,18 +708,38 @@ fn app_audit_window<F: FbViewMut>(
     let x = deco.window_rect.x0 + deco.window_rect.w as i64 + 10;
 
     for spec in graph_specs {
-
-        draw_str(uitk_context.fb, spec.title, x, y, title_font, uitk_context.stylesheet.colors.text, None);
+        draw_str(
+            uitk_context.fb,
+            spec.title,
+            x,
+            y,
+            title_font,
+            uitk_context.stylesheet.colors.text,
+            None,
+        );
         y += title_font.char_h as i64;
 
-        draw_str(uitk_context.fb, spec.subtitle, x, y, subtitle_font, uitk_context.stylesheet.colors.text, None);
+        draw_str(
+            uitk_context.fb,
+            spec.subtitle,
+            x,
+            y,
+            subtitle_font,
+            uitk_context.stylesheet.colors.text,
+            None,
+        );
         y += subtitle_font.char_h as i64;
 
         y += GRAPH_GAP_H as i64;
 
         let graph_h = ROW_H - (title_font.char_h + subtitle_font.char_h) as u32 - GRAPH_GAP_H;
 
-        let graph_rect = Rect { x0: x, y0: y, w: AUDIT_WIN_W, h: graph_h };
+        let graph_rect = Rect {
+            x0: x,
+            y0: y,
+            w: AUDIT_WIN_W,
+            h: graph_h,
+        };
         uitk_context.graph(
             &uitk::GraphConfig {
                 rect: graph_rect.clone(),
@@ -647,35 +749,51 @@ fn app_audit_window<F: FbViewMut>(
             spec.series,
         );
 
-        draw_rect_outline(uitk_context.fb, &graph_rect, Color::BLACK, false, uitk_context.stylesheet.margin);
+        draw_rect_outline(
+            uitk_context.fb,
+            &graph_rect,
+            Color::BLACK,
+            false,
+            uitk_context.stylesheet.margin,
+        );
 
         y += graph_h as i64;
         y += GAP_H as i64;
     }
 
-
     let stylesheet = &uitk_context.stylesheet;
-    draw_str(uitk_context.fb, "Console log", x, y, title_font, stylesheet.colors.text, None);
+    draw_str(
+        uitk_context.fb,
+        "Console log",
+        x,
+        y,
+        title_font,
+        stylesheet.colors.text,
+        None,
+    );
     y += title_font.char_h as i64;
 
     let [_, _, _, win_y] = deco.window_rect.as_xyxy();
 
     let console_rect = Rect::from_xyxy([
-        x, y,
+        x,
+        y,
         x + AUDIT_WIN_W as i64,
         i64::max(y + MIN_AUDIT_WIN_H as i64, win_y - deco.handle_h as i64 - 1),
     ]);
 
-    uitk_context.style(|ss| ss.text.sizes.medium = LOG_FONT_SIZE).text_box(
+    uitk_context
+        .style(|ss| ss.text.sizes.medium = LOG_FONT_SIZE)
+        .text_box(&console_rect, console_log, scrollable_text_state, true);
+
+    draw_rect_outline(
+        uitk_context.fb,
         &console_rect,
-        console_log,
-        scrollable_text_state,
-        true
+        Color::BLACK,
+        false,
+        uitk_context.stylesheet.margin,
     );
-
-    draw_rect_outline(uitk_context.fb, &console_rect, Color::BLACK, false, uitk_context.stylesheet.margin);
 }
-
 
 fn get_hold_anchor(pointer: &PointerState, rect: &Rect) -> Point2D<i64> {
     let dx = pointer.x - rect.x0;
@@ -684,7 +802,6 @@ fn get_hold_anchor(pointer: &PointerState, rect: &Rect) -> Point2D<i64> {
 }
 
 fn position_window(preferred_rect: &Rect, fb_shape: (u32, u32), deco: &AppDecorations) -> Rect {
-
     // TODO: ideally, this should be computed dynamically...
     const TOPBAR_GAP: u32 = 68;
 
@@ -707,7 +824,6 @@ fn position_window(preferred_rect: &Rect, fb_shape: (u32, u32), deco: &AppDecora
 }
 
 fn compute_decorations(app: &App, input_state: &InputState) -> AppDecorations {
-
     const TITLEBAR_HEIGHT: u32 = 32;
     const BORDER_THICKNESS: u32 = 8;
     const RESIZE_HANDLE_LEN: u32 = 32;
@@ -784,9 +900,8 @@ fn compute_decorations(app: &App, input_state: &InputState) -> AppDecorations {
     };
 
     let pointer = &input_state.pointer;
-    let titlebar_hover =
-        icon_rect.check_contains_point(pointer.x, pointer.y) ||
-        titlebar_rect.check_contains_point(pointer.x, pointer.y);
+    let titlebar_hover = icon_rect.check_contains_point(pointer.x, pointer.y)
+        || titlebar_rect.check_contains_point(pointer.x, pointer.y);
     let resize_hover = resize_zone_rect.check_contains_point(pointer.x, pointer.y);
     let window_hover = window_rect.check_contains_point(pointer.x, pointer.y);
 
@@ -805,8 +920,10 @@ fn compute_decorations(app: &App, input_state: &InputState) -> AppDecorations {
         resize_hover,
         window_hover,
         border_rects: [
-            left_border_rect, top_border_rect,
-            right_border_rect, bottom_border_rect
+            left_border_rect,
+            top_border_rect,
+            right_border_rect,
+            bottom_border_rect,
         ],
         handle_rects: [handle_rect_1, handle_rect_2],
         resize_zone_rect,
@@ -822,14 +939,19 @@ fn draw_decorations<F: FbViewMut>(
     deco: &AppDecorations,
     highlight: bool,
 ) {
-
     let color_deco = match highlight {
         true => stylesheet.colors.hover_overlay,
         false => stylesheet.colors.frame,
     };
 
     draw_rect(fb, &deco.titlebar_rect, color_deco, false);
-    draw_rect_outline(fb, &deco.titlebar_rect, Color::BLACK, false, stylesheet.margin);
+    draw_rect_outline(
+        fb,
+        &deco.titlebar_rect,
+        Color::BLACK,
+        false,
+        stylesheet.margin,
+    );
     for rect in deco.border_rects.iter() {
         draw_rect(fb, rect, color_deco, false);
     }
@@ -845,12 +967,18 @@ fn draw_decorations<F: FbViewMut>(
 
     let ellipsized_title = ellipsize_text(app_descriptor.name, font, deco.titlebar_rect.w);
 
-    draw_line_in_rect(fb, &ellipsized_title, &deco.titlebar_rect, font, stylesheet.colors.text, TextJustification::Left);
+    draw_line_in_rect(
+        fb,
+        &ellipsized_title,
+        &deco.titlebar_rect,
+        font,
+        stylesheet.colors.text,
+        TextJustification::Left,
+    );
 
     for rect in deco.handle_rects.iter() {
         draw_rect(fb, rect, stylesheet.colors.accent, false);
     }
-
 
     //
     // Drawing black outline
@@ -863,10 +991,30 @@ fn draw_decorations<F: FbViewMut>(
     let [_, _, bx2, _] = bottom_border_rect.as_xyxy();
     let [_, _, _, ry2] = right_border_rect.as_xyxy();
 
-    draw_rect(fb, &Rect::from_xyxy([x1, y1, x2, y1 + m - 1]), Color::BLACK, false);
-    draw_rect(fb, &Rect::from_xyxy([x1, y2 - m + 1, bx2, y2]), Color::BLACK, false);
-    draw_rect(fb, &Rect::from_xyxy([x1, y1, x1 + m - 1, y2]), Color::BLACK, false);
-    draw_rect(fb, &Rect::from_xyxy([x2 - m + 1, y1, x2, ry2]), Color::BLACK, false);
+    draw_rect(
+        fb,
+        &Rect::from_xyxy([x1, y1, x2, y1 + m - 1]),
+        Color::BLACK,
+        false,
+    );
+    draw_rect(
+        fb,
+        &Rect::from_xyxy([x1, y2 - m + 1, bx2, y2]),
+        Color::BLACK,
+        false,
+    );
+    draw_rect(
+        fb,
+        &Rect::from_xyxy([x1, y1, x1 + m - 1, y2]),
+        Color::BLACK,
+        false,
+    );
+    draw_rect(
+        fb,
+        &Rect::from_xyxy([x2 - m + 1, y1, x2, ry2]),
+        Color::BLACK,
+        false,
+    );
 }
 
 fn ellipsize_text(txt: &str, font: &Font, max_len: u32) -> String {

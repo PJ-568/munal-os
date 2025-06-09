@@ -88,7 +88,6 @@ pub fn parse_html(html: &str) -> anyhow::Result<Tree<HtmlNode>> {
 }
 
 fn deduplicate_spaces(s: &str) -> String {
-
     let mut new_s = String::with_capacity(s.len());
 
     let mut prev_was_space = false;
@@ -299,4 +298,3 @@ pub enum HtmlNode {
         text: String,
     },
 }
-

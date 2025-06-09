@@ -1,13 +1,13 @@
+use crate::Rect;
 use alloc::vec::Vec;
 use num::traits::real::Real;
-use crate::Rect;
 
 pub fn make_horizontal_layout(rect: &Rect, margin: u32, items: &[LayoutItem]) -> Vec<Rect> {
-
-    let total_fixed_w: u32 = items.iter()
+    let total_fixed_w: u32 = items
+        .iter()
         .map(|&it| match it {
             LayoutItem::Fixed { size } => size,
-            LayoutItem::Float => 0
+            LayoutItem::Float => 0,
         })
         .sum();
 
@@ -24,45 +24,51 @@ pub fn make_horizontal_layout(rect: &Rect, margin: u32, items: &[LayoutItem]) ->
     let float_w = (total_float_w as f32) / (n_float as f32);
 
     let mut x1 = rect.x0 as f32;
-    items.iter().enumerate().map(|(i, it)| {
+    items
+        .iter()
+        .enumerate()
+        .map(|(i, it)| {
+            let size = match it {
+                LayoutItem::Fixed { size } => *size as f32,
+                LayoutItem::Float => float_w,
+            };
 
-        let size = match it {
-            LayoutItem::Fixed { size } => *size as f32,
-            LayoutItem::Float => float_w,
-        };
+            let x2 = x1 + size - 1.0;
 
-        let x2 = x1 + size - 1.0;
+            let [_, y1, _, y2] = rect.as_xyxy();
+            let item_rect = Rect::from_xyxy([f32::round(x1) as i64, y1, f32::round(x2) as i64, y2]);
 
-        let [_, y1, _, y2] = rect.as_xyxy();
-        let item_rect = Rect::from_xyxy([
-            f32::round(x1) as i64,
-            y1,
-            f32::round(x2) as i64,
-            y2
-        ]);
+            x1 += size;
 
-        x1 += size;
+            if i != items.len() - 1 {
+                x1 += margin as f32;
+            }
 
-        if i != items.len() - 1 {
-            x1 += margin as f32;
-        }
-
-        item_rect
-
-    })
-    .collect()
-
+            item_rect
+        })
+        .collect()
 }
 
 pub fn make_vertical_layout(rect: &Rect, margin: u32, items: &[LayoutItem]) -> Vec<Rect> {
-    let transposed_rect = Rect { x0: rect.y0, y0: rect.x0, w: rect.h, h: rect.w };
+    let transposed_rect = Rect {
+        x0: rect.y0,
+        y0: rect.x0,
+        w: rect.h,
+        h: rect.w,
+    };
     let mut layout_rects = make_horizontal_layout(&transposed_rect, margin, items);
-    layout_rects.iter_mut().for_each(|r| *r = Rect { x0: r.y0, y0: r.x0, w: r.h, h: r.w });
+    layout_rects.iter_mut().for_each(|r| {
+        *r = Rect {
+            x0: r.y0,
+            y0: r.x0,
+            w: r.h,
+            h: r.w,
+        }
+    });
     layout_rects
 }
 
 pub fn make_grid_layout(rect: &Rect, margin: u32, nx: usize, ny: usize) -> Vec<Rect> {
-
     let x_partition = partition(rect.w, margin, nx);
     let y_partition = partition(rect.h, margin, ny);
 
@@ -74,7 +80,7 @@ pub fn make_grid_layout(rect: &Rect, margin: u32, nx: usize, ny: usize) -> Vec<R
                 rect.x0 + x1,
                 rect.y0 + y1,
                 rect.x0 + x2,
-                rect.y0 + y2,  
+                rect.y0 + y2,
             ]));
         }
     }
@@ -83,7 +89,6 @@ pub fn make_grid_layout(rect: &Rect, margin: u32, nx: usize, ny: usize) -> Vec<R
 }
 
 fn partition(total: u32, margin: u32, n: usize) -> Vec<(i64, i64)> {
-    
     assert_ne!(n, 0);
     assert_ne!(total, 0);
 
@@ -96,12 +101,8 @@ fn partition(total: u32, margin: u32, n: usize) -> Vec<(i64, i64)> {
     let mut v = Vec::new();
     let mut x1 = 0.0;
     for i in 0..n {
-
         let x2 = x1 + elem_w;
-        v.push((
-            f32::round(x1) as i64,
-            f32::round(x2) as i64 - 1,
-        ));
+        v.push((f32::round(x1) as i64, f32::round(x2) as i64 - 1));
 
         x1 += elem_w;
         if i != n - 1 {

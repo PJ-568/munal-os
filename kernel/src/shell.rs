@@ -2,7 +2,7 @@ use alloc::borrow::ToOwned;
 use alloc::string::String;
 use alloc::vec::Vec;
 use applib::drawing::primitives::{draw_arc, ArcMode};
-use applib::drawing::text::{draw_str, Font, compute_text_bbox, get_font};
+use applib::drawing::text::{compute_text_bbox, draw_str, get_font, Font};
 use applib::geometry::{Point2D, Vec2D};
 use applib::uitk::{self};
 use applib::{Color, FbView, FbViewMut, Framebuffer, OwnedPixels};
@@ -41,7 +41,7 @@ impl PieMenuEntry {
 // We have to defer the draw operation of the pie menu,
 // because it's supposed to be drawn above the rest (app windows, etc)
 pub struct PieDrawCalls {
-    calls: Vec<DrawCall>
+    calls: Vec<DrawCall>,
 }
 
 pub fn pie_menu<'a, F: FbViewMut>(
@@ -61,10 +61,7 @@ pub fn pie_menu<'a, F: FbViewMut>(
     let pointer = &uitk_context.input_state.pointer;
     let stylesheet = &uitk_context.stylesheet;
 
-    let font = get_font(
-        &stylesheet.text.font_family(),
-        stylesheet.text.sizes.medium,
-    );
+    let font = get_font(&stylesheet.text.font_family(), stylesheet.text.sizes.medium);
 
     let pointer = Point2D::<i64> {
         x: pointer.x,
@@ -75,15 +72,12 @@ pub fn pie_menu<'a, F: FbViewMut>(
 
     let total_weight: f32 = entries.iter().map(|entry| entry.weight()).sum();
 
-
     assert!(!entries.is_empty());
-
-    
 
     let mut selected_entry = None;
     //let mut a0 = 0.0;
     let mut a0 = -PI * entries[0].weight() / total_weight;
-    let mut draw_calls  = PieDrawCalls { calls: Vec::new() };
+    let mut draw_calls = PieDrawCalls { calls: Vec::new() };
 
     for entry in entries.iter() {
         let delta_angle = 2.0 * PI * entry.weight() / total_weight;
@@ -139,9 +133,7 @@ pub fn pie_menu<'a, F: FbViewMut>(
             outer: (a0 + outer_angle_gap, a1 - outer_angle_gap),
         };
 
-
         match entry {
-
             PieMenuEntry::Spacer { .. } => draw_calls.calls.push(DrawCall::Arc {
                 center: p_arc,
                 r_inner: INNER_RADIUS,
@@ -149,11 +141,16 @@ pub fn pie_menu<'a, F: FbViewMut>(
                 mode: arc_mode,
                 px_per_pt: ARC_PX_PER_PT,
                 color: stylesheet.colors.background,
-                blend: false
+                blend: false,
             }),
 
-            PieMenuEntry::Button { icon, color, text, text_color, .. } => {
-
+            PieMenuEntry::Button {
+                icon,
+                color,
+                text,
+                text_color,
+                ..
+            } => {
                 draw_calls.calls.push(DrawCall::Arc {
                     center: p_arc,
                     r_inner: INNER_RADIUS,
@@ -161,7 +158,7 @@ pub fn pie_menu<'a, F: FbViewMut>(
                     mode: arc_mode,
                     px_per_pt: ARC_PX_PER_PT,
                     color: *color,
-                    blend: false
+                    blend: false,
                 });
 
                 let (icon_w, icon_h) = icon.shape();
@@ -171,11 +168,10 @@ pub fn pie_menu<'a, F: FbViewMut>(
                 draw_calls.calls.push(DrawCall::Icon {
                     icon: *icon,
                     x0: x0_icon,
-                    y0: y0_icon
+                    y0: y0_icon,
                 });
 
                 if is_hovered {
-
                     draw_calls.calls.push(DrawCall::Arc {
                         center: p_arc,
                         r_inner: INNER_RADIUS,
@@ -183,31 +179,35 @@ pub fn pie_menu<'a, F: FbViewMut>(
                         mode: arc_mode,
                         px_per_pt: ARC_PX_PER_PT,
                         color: stylesheet.colors.hover_overlay,
-                        blend: true
+                        blend: true,
                     });
 
-                    let p_text =
-                        center + (v_bisect * (OUTER_RADIUS + TEXT_OFFSET)).round_to_int() + v_offset;
+                    let p_text = center
+                        + (v_bisect * (OUTER_RADIUS + TEXT_OFFSET)).round_to_int()
+                        + v_offset;
                     let (text_w, text_h) = compute_text_bbox(text, font);
 
                     let x0_text = {
-
                         const EPSILON: f32 = 0.1;
-                        
-                        if v_bisect.x > EPSILON { p_text.x }
-                        else if v_bisect.x < -EPSILON { p_text.x - text_w as i64 }
-                        else { p_text.x - (text_w / 2) as i64 }
+
+                        if v_bisect.x > EPSILON {
+                            p_text.x
+                        } else if v_bisect.x < -EPSILON {
+                            p_text.x - text_w as i64
+                        } else {
+                            p_text.x - (text_w / 2) as i64
+                        }
                     };
 
                     let y0_text = p_text.y - (text_h / 2) as i64;
 
-                    draw_calls.calls.push(DrawCall::Text { 
+                    draw_calls.calls.push(DrawCall::Text {
                         s: text.to_owned(),
                         x0: x0_text,
                         y0: y0_text,
                         font: font,
                         color: *text_color,
-                        bg_color: Some(stylesheet.colors.background)
+                        bg_color: Some(stylesheet.colors.background),
                     });
                 }
             }
@@ -223,36 +223,30 @@ impl PieDrawCalls {
     pub fn draw<F: FbViewMut>(self, fb: &mut F) {
         for call in self.calls.into_iter() {
             match call {
-
-                DrawCall::Arc { 
+                DrawCall::Arc {
                     center,
                     r_inner,
                     r_outer,
                     mode,
-                    px_per_pt, 
+                    px_per_pt,
                     color,
-                    blend 
+                    blend,
                 } => draw_arc(fb, center, r_inner, r_outer, mode, px_per_pt, color, blend),
 
-                DrawCall::Icon { 
-                    icon,
-                    x0,
-                    y0
-                } => fb.copy_from_fb(icon, (x0, y0), true),
+                DrawCall::Icon { icon, x0, y0 } => fb.copy_from_fb(icon, (x0, y0), true),
 
-                DrawCall::Text { 
+                DrawCall::Text {
                     s,
                     x0,
                     y0,
                     font,
                     color,
-                    bg_color
+                    bg_color,
                 } => draw_str(fb, &s, x0, y0, font, color, bg_color),
             }
         }
     }
 }
-
 
 enum DrawCall {
     Arc {
@@ -276,5 +270,5 @@ enum DrawCall {
         font: &'static Font,
         color: Color,
         bg_color: Option<Color>,
-    }
+    },
 }

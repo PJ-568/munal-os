@@ -1,23 +1,22 @@
-use alloc::vec::Vec;
 use alloc::collections::BTreeMap;
+use alloc::vec::Vec;
 
-mod widgets;
-mod text;
 pub mod layout;
+mod text;
+mod widgets;
 
+pub use text::{render_rich_text, string_input};
 pub use widgets::button::{ButtonConfig, ButtonIndicatorMode};
 pub use widgets::dynamic_canvas::TileRenderer;
+pub use widgets::graph::{GraphAggMode, GraphConfig, GraphSeries};
+pub use widgets::horiz_bar::{BarValue, HorizBarConfig};
 pub use widgets::progress_bar::ProgressBarConfig;
 pub use widgets::static_canvas::set_autoscroll;
-pub use widgets::graph::{GraphConfig, GraphSeries, GraphAggMode};
-pub use widgets::horiz_bar::{BarValue, HorizBarConfig};
-pub use widgets::text_box::{FormattableText, TextBoxState, EditableRichText};
-pub use text::{render_rich_text, string_input};
+pub use widgets::text_box::{EditableRichText, FormattableText, TextBoxState};
 
 pub use crate::content::{ContentId, UuidProvider};
-use crate::{InputState, StyleSheet};
 use crate::{FbViewMut, Framebuffer, OwnedPixels};
-
+use crate::{InputState, StyleSheet};
 
 const TILE_CACHE_MAX_SIZE: usize = 20_000_000; // in bytes
 
@@ -31,20 +30,27 @@ pub struct TileCache {
 }
 
 impl TileCache {
-
     fn new() -> Self {
         Self {
             tiles: BTreeMap::new(),
         }
     }
 
-    pub fn fetch_or_create<F>(&mut self, content_id: ContentId, time: f64, create_func: F) -> &Framebuffer<OwnedPixels> 
-        where F: FnOnce() -> Framebuffer<OwnedPixels>
-    
+    pub fn fetch_or_create<F>(
+        &mut self,
+        content_id: ContentId,
+        time: f64,
+        create_func: F,
+    ) -> &Framebuffer<OwnedPixels>
+    where
+        F: FnOnce() -> Framebuffer<OwnedPixels>,
     {
         let cached_tile = self.tiles.entry(content_id).or_insert_with(|| {
             let tile_fb = create_func();
-            CachedTile { fb: tile_fb, last_used_time: time }
+            CachedTile {
+                fb: tile_fb,
+                last_used_time: time,
+            }
         });
 
         cached_tile.last_used_time = time;
@@ -53,14 +59,16 @@ impl TileCache {
     }
 
     fn cleanup(&mut self) {
-
         let mut pairs = Vec::with_capacity(self.tiles.len());
         while let Some((key, tile)) = self.tiles.pop_last() {
             pairs.push((key, tile));
         }
 
         pairs.sort_unstable_by(|(_, tile_1), (_, tile_2)| {
-            tile_2.last_used_time.partial_cmp(&tile_1.last_used_time).unwrap()
+            tile_2
+                .last_used_time
+                .partial_cmp(&tile_1.last_used_time)
+                .unwrap()
         });
 
         let mut current_size = 0;
@@ -82,12 +90,15 @@ impl TileCache {
                 evicted_count,
                 evicted_size as f64 / 1_000_000.0,
                 self.tiles.len(),
-                self.tiles.values().map(|tile| tile.fb.size_bytes()).sum::<usize>() as f64 / 1_000_000.0,
+                self.tiles
+                    .values()
+                    .map(|tile| tile.fb.size_bytes())
+                    .sum::<usize>() as f64
+                    / 1_000_000.0,
             );
         }
     }
 }
-
 
 pub struct UiContext<'a, F: FbViewMut> {
     pub fb: &'a mut F,
@@ -101,14 +112,27 @@ pub struct UiContext<'a, F: FbViewMut> {
 }
 
 impl<'a, F: FbViewMut> UiContext<'a, F> {
-
     pub fn style<'b>(&'b mut self, func: impl Fn(&mut StyleSheet)) -> UiContext<'b, F> {
-        let UiContext { fb, stylesheet, input_state, uuid_provider, time, tile_cache } = self;
+        let UiContext {
+            fb,
+            stylesheet,
+            input_state,
+            uuid_provider,
+            time,
+            tile_cache,
+        } = self;
 
         let mut new_stylesheet = stylesheet.clone();
         func(&mut new_stylesheet);
 
-        UiContext { fb, stylesheet: new_stylesheet, input_state, uuid_provider, time: *time, tile_cache }
+        UiContext {
+            fb,
+            stylesheet: new_stylesheet,
+            input_state,
+            uuid_provider,
+            time: *time,
+            tile_cache,
+        }
     }
 }
 
@@ -131,7 +155,6 @@ impl UiStore {
         uuid_provider: &'a mut UuidProvider,
         time: f64,
     ) -> UiContext<'a, F> {
-
         // TODO: move that somewhere else
         self.tile_cache.cleanup();
 

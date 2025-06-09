@@ -58,7 +58,6 @@ struct VirtQStorage<const Q_SIZE: usize> {
 }
 
 impl<const Q_SIZE: usize> VirtQStorage<Q_SIZE> {
-
     const fn new() -> Self {
         let desc_table = {
             let zero_desc = VirtqDesc {
@@ -145,7 +144,6 @@ pub struct VirtioPciCommonCfg {
 }
 
 impl<const Q_SIZE: usize, const BUF_SIZE: usize> VirtioQueue<Q_SIZE, BUF_SIZE> {
-
     fn take_descriptor(&mut self) -> Option<usize> {
         for (desc_index, available) in self.avail_desc.iter_mut().enumerate() {
             if *available {
@@ -226,12 +224,15 @@ impl<const Q_SIZE: usize, const BUF_SIZE: usize> VirtioQueue<Q_SIZE, BUF_SIZE> {
             write_volatile(desc_ref, descriptor);
         }
 
-    
         let ring_index = read_volatile(&self.storage.driver_area.idx) as usize;
 
         write_volatile(
-            self.storage.driver_area.ring.get_mut(ring_index % Q_SIZE).unwrap(),
-            desc_indices[0] as u16
+            self.storage
+                .driver_area
+                .ring
+                .get_mut(ring_index % Q_SIZE)
+                .unwrap(),
+            desc_indices[0] as u16,
         );
 
         let old_idx = read_volatile(&self.storage.driver_area.idx);
@@ -256,19 +257,16 @@ impl<const Q_SIZE: usize, const BUF_SIZE: usize> VirtioQueue<Q_SIZE, BUF_SIZE> {
         }
 
         let idx: usize = self.pop_index.try_into().unwrap();
-    
-        let it: VirtqUsedElem = read_volatile(
-            self.storage.device_area.ring.get(idx % Q_SIZE).unwrap()
-        );
+
+        let it: VirtqUsedElem =
+            read_volatile(self.storage.device_area.ring.get(idx % Q_SIZE).unwrap());
         //log::debug!("Received element: {:?}", it);
 
         let mut out = ArrayVec::<[T; N]>::new();
         let mut desc_index: usize = it.id.try_into().unwrap();
 
         loop {
-            let descriptor = read_volatile(
-                self.storage.descriptor_area.0.get(desc_index).unwrap()
-            );
+            let descriptor = read_volatile(self.storage.descriptor_area.0.get(desc_index).unwrap());
             //log::debug!("Received descriptor: {:?}", descriptor);
             unsafe {
                 let virt_addr = mapper.phys_to_virt(PhysAddr::new(descriptor.addr));
@@ -413,7 +411,9 @@ impl VirtioDevice {
             let buf_ref = Box::leak(buffer);
             let pys_addr = memory::get_mapper().ref_to_phys(buf_ref);
 
-            unsafe { write_volatile(&mut descriptor.addr, pys_addr.as_u64()); }
+            unsafe {
+                write_volatile(&mut descriptor.addr, pys_addr.as_u64());
+            }
         }
 
         // Calculating addresses
@@ -429,9 +429,7 @@ impl VirtioDevice {
         // log::debug!("dev_area_addr={:x}", dev_area_addr);
 
         unsafe {
-
             let c = &mut self.common_config;
-
 
             write_volatile(&mut c.queue_select, q_index);
             write_volatile(&mut c.queue_desc, descr_area_addr);
@@ -495,17 +493,14 @@ impl VirtioDevice {
     }
 
     fn write_feature_bits(&mut self, select: u32, val: u32) {
-
         unsafe {
             write_volatile(&mut self.common_config.driver_feature_select, select);
             write_volatile(&mut self.common_config.driver_feature, val);
-
         }
     }
 
     #[allow(dead_code)]
     fn read_feature_bits(&mut self, select: u32) -> u32 {
-
         unsafe {
             write_volatile(&mut self.common_config.device_feature_select, select);
             read_volatile(&self.common_config.device_feature)
@@ -513,10 +508,8 @@ impl VirtioDevice {
     }
 }
 
-
 #[repr(C, align(16))]
 pub struct VirtqDescTable<const Q_SIZE: usize>([VirtqDesc; Q_SIZE]);
-
 
 #[derive(Clone, Copy, Debug)]
 pub struct VirtqDesc {

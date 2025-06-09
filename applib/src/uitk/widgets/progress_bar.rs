@@ -12,33 +12,36 @@ impl<'a, F: FbViewMut> UiContext<'a, F> {
         let container_rect = {
             let m = stylesheet.margin as i64;
             let [x0, y0, x1, y1] = config.rect.as_xyxy();
-            Rect::from_xyxy([x0+m, y0+m, x1-m, y1-m])
+            Rect::from_xyxy([x0 + m, y0 + m, x1 - m, y1 - m])
         };
 
         let bar_w = ((config.rect.w as u64) * progress / config.max_val) as u32;
 
         let bar_rect = {
             let Rect { x0, y0, h, .. } = config.rect;
-            Rect { x0, y0, h, w: bar_w }
+            Rect {
+                x0,
+                y0,
+                h,
+                w: bar_w,
+            }
         };
 
         draw_rect(*fb, &config.rect, colorsheet.background, false);
         draw_rect(*fb, &bar_rect, colorsheet.accent, false);
 
-        let font = get_font(
-            &stylesheet.text.font_family(),
-            stylesheet.text.sizes.medium,
-        );
+        let font = get_font(&stylesheet.text.font_family(), stylesheet.text.sizes.medium);
 
         let text_w = (text.len() * font.char_w) as u32;
         let text_h = font.char_h as u32;
 
-        let text_rect = Rect { 
+        let text_rect = Rect {
             x0: config.rect.x0 + stylesheet.margin as i64,
             y0: 0,
             w: text_w,
-            h: text_h
-        }.align_to_rect_vert(&config.rect);
+            h: text_h,
+        }
+        .align_to_rect_vert(&config.rect);
 
         draw_str(
             *fb,

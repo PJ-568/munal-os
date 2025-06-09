@@ -9,8 +9,8 @@ pub mod drawing;
 pub mod geometry;
 pub mod hash;
 pub mod input;
-pub mod uitk;
 mod stylesheet;
+pub mod uitk;
 
 use alloc::vec;
 use alloc::vec::Vec;
@@ -18,7 +18,7 @@ use core::ops;
 use geometry::Vec2D;
 use input::InputState;
 
-pub use stylesheet::{StyleSheet, StyleSheetColors, TextSizes, StyleSheetText};
+pub use stylesheet::{StyleSheet, StyleSheetColors, StyleSheetText, TextSizes};
 
 #[derive(Clone, Copy, Hash, Debug, PartialEq)]
 #[repr(transparent)]
@@ -36,7 +36,6 @@ impl Color {
     pub const FUCHSIA: Color = Color::rgb(255, 0, 255);
     pub const AQUA: Color = Color::rgb(0, 250, 255);
     pub const ORANGE: Color = Color::rgb(255, 127, 0);
-
 
     pub const fn rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
         Color([r, g, b, a])
@@ -95,7 +94,7 @@ impl Rect {
 
     pub fn offset(&self, o: i64) -> Self {
         let [x0, y0, x1, y1] = self.as_xyxy();
-        Rect::from_xyxy([x0-o, y0-o, x1+o, y1+o])
+        Rect::from_xyxy([x0 - o, y0 - o, x1 + o, y1 + o])
     }
 
     pub fn align_to_rect(&self, other: &Rect) -> Rect {
@@ -334,7 +333,6 @@ pub trait FbViewMut: FbView {
 }
 
 impl<'a> Framebuffer<BorrowedMutPixels<'a>> {
-
     pub fn new<'b>(data: &'b mut [Color], w: u32, h: u32) -> Framebuffer<BorrowedMutPixels<'b>> {
         assert_eq!(data.len(), (w * h) as usize);
         let rect = Rect { x0: 0, y0: 0, w, h };
@@ -346,12 +344,15 @@ impl<'a> Framebuffer<BorrowedMutPixels<'a>> {
         }
     }
 
-    pub fn from_bytes<'b>(bytes: &'b mut [u8], w: u32, h: u32) -> Framebuffer<BorrowedMutPixels<'b>> {
-
+    pub fn from_bytes<'b>(
+        bytes: &'b mut [u8],
+        w: u32,
+        h: u32,
+    ) -> Framebuffer<BorrowedMutPixels<'b>> {
         assert_eq!(bytes.len(), (4 * w * h) as usize);
 
         // Safe because of the check above, and because Color has an alignment of 1
-        let data = unsafe { 
+        let data = unsafe {
             let (head, body, tail) = bytes.align_to_mut::<Color>();
             assert_eq!(head.len(), 0);
             assert_eq!(tail.len(), 0);
@@ -363,7 +364,6 @@ impl<'a> Framebuffer<BorrowedMutPixels<'a>> {
 }
 
 impl<'a> Framebuffer<BorrowedPixels<'a>> {
-
     pub fn new<'b>(data: &'b [Color], w: u32, h: u32) -> Framebuffer<BorrowedPixels<'b>> {
         assert_eq!(data.len(), (w * h) as usize);
         let rect = Rect { x0: 0, y0: 0, w, h };
@@ -376,11 +376,10 @@ impl<'a> Framebuffer<BorrowedPixels<'a>> {
     }
 
     pub fn from_bytes<'b>(bytes: &'b [u8], w: u32, h: u32) -> Framebuffer<BorrowedPixels<'b>> {
-
         assert_eq!(bytes.len(), (4 * w * h) as usize);
 
         // Safe because of the check above, and because Color has an alignment of 1
-        let data = unsafe { 
+        let data = unsafe {
             let (head, body, tail) = bytes.align_to::<Color>();
             assert_eq!(head.len(), 0);
             assert_eq!(tail.len(), 0);
@@ -392,7 +391,6 @@ impl<'a> Framebuffer<BorrowedPixels<'a>> {
 }
 
 impl Framebuffer<OwnedPixels> {
-
     pub fn new_owned(w: u32, h: u32) -> Self {
         Self::new_owned_filled(w, h, Color::ZERO)
     }
@@ -416,12 +414,13 @@ impl Framebuffer<OwnedPixels> {
         let data_u8 = decoded.u8().unwrap();
         assert_eq!(data_u8.len(), h * w * 4, "PNG has wrong dimensions"); // Requires an alpha channel
 
-        let data: Vec<Color> = (0..h*w).map(|x| {
-            let i = 4 * x;
-            let color_bytes = data_u8[i..i+4].try_into().unwrap();
-            Color(color_bytes)
-        })
-        .collect();
+        let data: Vec<Color> = (0..h * w)
+            .map(|x| {
+                let i = 4 * x;
+                let color_bytes = data_u8[i..i + 4].try_into().unwrap();
+                Color(color_bytes)
+            })
+            .collect();
 
         let (w, h) = (w as u32, h as u32);
 
@@ -580,7 +579,6 @@ impl<T: FbDataMut> FbViewMut for Framebuffer<T> {
     }
 
     fn fill(&mut self, color: Color) {
-
         let (w, h) = self.shape();
         if w == self.data_w && h == self.data_h {
             self.data.as_mut_slice().fill(color);

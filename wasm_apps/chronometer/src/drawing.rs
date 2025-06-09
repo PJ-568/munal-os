@@ -21,19 +21,19 @@ const DIVIDER: f32 = 60_000.0;
 
 const WINDOW_SCALE_FACTOR: f32 = 250.0;
 
-
 pub fn draw_background<F: FbViewMut>(fb: &mut F) {
-
     let (fb_w, fb_h) = fb.shape();
     let win_scale = (u32::min(fb_w, fb_h) as f32) / WINDOW_SCALE_FACTOR;
-    let center = Point2D::<f32> { x: fb_w as f32 / 2.0, y: fb_h as f32 / 2.0};
+    let center = Point2D::<f32> {
+        x: fb_w as f32 / 2.0,
+        y: fb_h as f32 / 2.0,
+    };
 
     let center = center.round_to_int();
 
     draw_arc(fb, center, 2.0, 7.0, ArcMode::Full, 5.0, Color::RED, false);
 
     for i in 0..N_GRAD {
-        
         let a = 2.0 * PI * (i as f32) / (N_GRAD as f32);
 
         let (a_delta, r_outer) = match i % 2 == 0 {
@@ -42,17 +42,19 @@ pub fn draw_background<F: FbViewMut>(fb: &mut F) {
         };
 
         let half_delta = a_delta / 2.0;
-       
+
         draw_arc(
-            fb, center,
-            win_scale * FACE_R_INNER, win_scale * r_outer,
+            fb,
+            center,
+            win_scale * FACE_R_INNER,
+            win_scale * r_outer,
             ArcMode::AngleRange(a - half_delta, a + half_delta),
             100.0,
-            Color::WHITE, false
+            Color::WHITE,
+            false,
         );
     }
 }
-
 
 pub fn draw_chrono<F: FbViewMut>(fb: &mut F, time: f64) {
     let angle = (time as f32 % DIVIDER) / DIVIDER * 2.0 * PI - PI / 2.0;
@@ -61,7 +63,10 @@ pub fn draw_chrono<F: FbViewMut>(fb: &mut F, time: f64) {
 
     let win_scale = (u32::min(fb_w, fb_h) as f32) / WINDOW_SCALE_FACTOR;
 
-    let center = Point2D::<f32> { x: fb_w as f32 / 2.0, y: fb_h as f32 / 2.0};
+    let center = Point2D::<f32> {
+        x: fb_w as f32 / 2.0,
+        y: fb_h as f32 / 2.0,
+    };
 
     let cos = angle.cos();
     let sin = angle.sin();

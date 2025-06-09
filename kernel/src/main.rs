@@ -18,6 +18,7 @@ use applib::{BorrowedMutPixels, Color, FbViewMut, Framebuffer, OwnedPixels, Rect
 
 extern crate alloc;
 
+mod allocator;
 mod app;
 mod logging;
 mod memory;
@@ -26,13 +27,12 @@ mod pci;
 mod resources;
 mod serial;
 mod shell;
+mod stats;
 mod system;
 mod time;
+mod topbar;
 mod virtio;
 mod wasm;
-mod topbar;
-mod allocator;
-mod stats;
 
 use time::SystemClock;
 
@@ -40,9 +40,9 @@ use virtio::gpu::VirtioGPU;
 use virtio::input::VirtioInput;
 use virtio::network::VirtioNetwork;
 
-use app::{run_apps, App, AppsInteractionState, AppsManager, AppState};
+use app::{run_apps, App, AppState, AppsInteractionState, AppsManager};
 use applib::input::keymap::{EventType, Keycode};
-use resources::{APPLICATIONS, WALLPAPER, STYLESHEET};
+use resources::{APPLICATIONS, STYLESHEET, WALLPAPER};
 use system::System;
 use wasm::WasmEngine;
 
@@ -102,7 +102,7 @@ fn main(image: Handle, system_table: SystemTable<Boot>) -> Status {
     let mut input_state = InputState::new(w, h);
 
     let app_names: Vec<&str> = APPLICATIONS.iter().map(|desc| desc.name).collect();
-    
+
     let alloc_stats = memory::ALLOCATOR.get_stats();
 
     let system_stats = stats::SystemStats::new(&alloc_stats, &app_names);
@@ -140,7 +140,6 @@ fn main(image: Handle, system_table: SystemTable<Boot>) -> Status {
     log::info!("Entering main loop");
 
     loop {
-
         let t0 = system.clock.time();
 
         {
@@ -157,18 +156,18 @@ fn main(image: Handle, system_table: SystemTable<Boot>) -> Status {
 
         update_input_state(&mut input_state, (w, h), &mut virtio_inputs);
 
-        let mut framebuffer = Framebuffer::<BorrowedMutPixels>::from_bytes(&mut virtio_gpu.framebuffer, w, h);
+        let mut framebuffer =
+            Framebuffer::<BorrowedMutPixels>::from_bytes(&mut virtio_gpu.framebuffer, w, h);
 
         let wallpaper: &Framebuffer<OwnedPixels> = &WALLPAPER;
         framebuffer.copy_from_fb(wallpaper, (0, 0), false);
-
 
         let mut uitk_context = ui_store.get_context(
             &mut framebuffer,
             &system.stylesheet,
             &input_state,
             &mut uuid_provider,
-            time
+            time,
         );
 
         run_apps(
@@ -337,7 +336,6 @@ impl FpsManager {
     }
 
     fn end_frame(&mut self, clock: &SystemClock) {
-
         const SMOOTHING: f64 = 0.8;
 
         let frametime_target = 1000.0 / self.fps_target;

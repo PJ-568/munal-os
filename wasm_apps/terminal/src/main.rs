@@ -2,15 +2,13 @@
 
 extern crate alloc;
 
+use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
-use alloc::format;
 use applib::content::TrackedContent;
-use applib::drawing::text::{
-    get_font, RichText
-};
+use applib::drawing::text::{get_font, RichText};
 use applib::input::Keycode;
-use applib::uitk::{self, UiStore, TextBoxState, EditableRichText};
+use applib::uitk::{self, EditableRichText, TextBoxState, UiStore};
 use applib::{Color, Rect, StyleSheet};
 use core::cell::OnceCell;
 use guestlib::PixelData;
@@ -86,7 +84,7 @@ pub fn step() {
         &stylesheet,
         &input_state,
         &mut state.uuid_provider,
-        time
+        time,
     );
 
     let Rect {
@@ -100,15 +98,12 @@ pub fn step() {
         h: win_h,
     };
 
-    let font = get_font(
-        &stylesheet.text.font_family(),
-        stylesheet.text.sizes.small
-    );
+    let font = get_font(&stylesheet.text.font_family(), stylesheet.text.sizes.small);
 
-    let mut editable = EditableRichText { 
+    let mut editable = EditableRichText {
         rich_text: &mut state.input_buffer,
         font,
-        color: Color::WHITE
+        color: Color::WHITE,
     };
 
     uitk_context.editable_text_box(
@@ -120,7 +115,8 @@ pub fn step() {
         Some(&rich_text_prelude),
     );
 
-    if input_state.check_key_pressed(Keycode::KEY_ENTER) && !state.input_buffer.as_ref().is_empty() {
+    if input_state.check_key_pressed(Keycode::KEY_ENTER) && !state.input_buffer.as_ref().is_empty()
+    {
         let cmd = state.input_buffer.as_ref().as_string();
         let pyres = state.python.run_code(&cmd);
         state
@@ -135,11 +131,7 @@ fn get_rich_text_prelude(
     stylesheet: &StyleSheet,
     history: &TrackedContent<Vec<EvalResult>>,
 ) -> TrackedContent<RichText> {
-
-    let font = get_font(
-        &stylesheet.text.font_family(),
-        stylesheet.text.sizes.small
-    );
+    let font = get_font(&stylesheet.text.font_family(), stylesheet.text.sizes.small);
 
     let mut rich_text = RichText::new();
 

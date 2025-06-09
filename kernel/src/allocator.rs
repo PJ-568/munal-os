@@ -10,7 +10,6 @@ pub struct SimpleAllocator {
 }
 
 pub struct SimpleHeap {
-
     start: *mut u8,
     ptr: *mut u8,
 
@@ -21,31 +20,30 @@ pub struct SimpleHeap {
     trackers: [Option<*mut u8>; NB_BLOCK_SIZES * NB_BLOCK_SIZES],
 
     stats: AllocStats,
-} 
+}
 
-#[derive(Debug, Clone,)]
+#[derive(Debug, Clone)]
 pub struct AllocStats {
     pub total: usize,
     pub explored: usize,
     pub allocated: usize,
     pub lost: usize,
-    pub reclaimable: usize
+    pub reclaimable: usize,
 }
 
 impl SimpleAllocator {
-
     pub const fn new() -> Self {
-        Self { heap: UnsafeCell::new(None) }
+        Self {
+            heap: UnsafeCell::new(None),
+        }
     }
 
     pub fn init(&self, heap_addr: VirtAddr, heap_size: usize) {
-
         let heap = self.heap.get();
         let start_ptr = heap_addr.as_mut_ptr();
 
         unsafe {
             *heap = Some(SimpleHeap {
-
                 start: start_ptr,
                 ptr: start_ptr,
 
@@ -57,7 +55,7 @@ impl SimpleAllocator {
                     allocated: 0,
                     lost: 0,
                     reclaimable: 0,
-                }
+                },
             })
         }
     }
@@ -72,13 +70,23 @@ impl SimpleAllocator {
 
     fn get_heap(&self) -> &SimpleHeap {
         unsafe {
-            self.heap.get().as_ref().unwrap().as_ref().expect("Allocator not initialized")
+            self.heap
+                .get()
+                .as_ref()
+                .unwrap()
+                .as_ref()
+                .expect("Allocator not initialized")
         }
     }
 
     fn get_heap_mut(&self) -> &mut SimpleHeap {
         unsafe {
-            self.heap.get().as_mut().unwrap().as_mut().expect("Allocator not initialized")
+            self.heap
+                .get()
+                .as_mut()
+                .unwrap()
+                .as_mut()
+                .expect("Allocator not initialized")
         }
     }
 }
@@ -86,9 +94,7 @@ impl SimpleAllocator {
 unsafe impl Sync for SimpleAllocator {}
 
 unsafe impl GlobalAlloc for SimpleAllocator {
-
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-
         let size = layout.size();
         let align = layout.align();
 
@@ -99,35 +105,37 @@ unsafe impl GlobalAlloc for SimpleAllocator {
         heap.stats.allocated += size;
 
         let alloc_ptr = match heap.trackers[tracker_index] {
-
             // Reclaiming a previously allocated and unused block
             Some(tracker_ptr) => {
-
                 // Getting the next block in the linked list by reading at this memory location
                 let next_addr = {
                     let s = core::slice::from_raw_parts(tracker_ptr, 8);
                     let s: &[u8; 8] = s.try_into().unwrap();
                     u64::from_le_bytes(*s)
                 };
-                
+
                 heap.trackers[tracker_index] = {
-                    if next_addr == 0x0 { None } // We've exhausted the reclaimable blocks for this block size
-                    else { Some(VirtAddr::new(next_addr).as_mut_ptr()) }
+                    if next_addr == 0x0 {
+                        None
+                    }
+                    // We've exhausted the reclaimable blocks for this block size
+                    else {
+                        Some(VirtAddr::new(next_addr).as_mut_ptr())
+                    }
                 };
-    
+
                 heap.stats.reclaimable -= block_size;
-    
+
                 tracker_ptr
-            },
+            }
 
             // Creating a new block
             None => {
-
                 let offset = heap.ptr.align_offset(align);
                 heap.ptr = heap.ptr.add(offset);
-        
+
                 let alloc_ptr = heap.ptr;
-        
+
                 heap.ptr = heap.ptr.add(block_size);
                 heap.stats.lost += offset;
                 heap.stats.explored = {
@@ -135,7 +143,7 @@ unsafe impl GlobalAlloc for SimpleAllocator {
                     let p1 = heap.ptr as usize;
                     p1 - p0
                 };
-    
+
                 alloc_ptr
             }
         };
@@ -144,7 +152,6 @@ unsafe impl GlobalAlloc for SimpleAllocator {
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-
         let size = layout.size();
         let align = layout.align();
 
@@ -153,7 +160,6 @@ unsafe impl GlobalAlloc for SimpleAllocator {
         let heap = self.get_heap_mut();
 
         let prev_addr = match heap.trackers[tracker_index] {
-
             Some(tracker_ptr) => VirtAddr::from_ptr(tracker_ptr).as_u64(),
 
             // No other block in the list to link to
@@ -170,9 +176,7 @@ unsafe impl GlobalAlloc for SimpleAllocator {
     }
 }
 
-
 fn get_tracker(size: usize, align: usize) -> (usize, usize) {
-
     // Block needs to be big enough to contain a linked list pointer
     let block_size = usize::max(8, size.next_power_of_two());
 

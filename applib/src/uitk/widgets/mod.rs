@@ -1,9 +1,9 @@
 pub mod button;
-pub mod progress_bar;
 pub mod dynamic_canvas;
-pub mod static_canvas;
 pub mod graph;
 pub mod horiz_bar;
-pub mod tooltip;
-pub mod text_box;
+pub mod progress_bar;
 pub mod section;
+pub mod static_canvas;
+pub mod text_box;
+pub mod tooltip;

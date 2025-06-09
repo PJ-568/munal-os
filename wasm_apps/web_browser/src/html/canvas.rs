@@ -1,10 +1,10 @@
-use super::render_list::RenderItem;
 use super::render::render_html;
+use super::render_list::RenderItem;
 use applib::content::{ContentId, TrackedContent};
 use applib::uitk::{self, UiContext};
 use applib::Color;
-use applib::Rect;
 use applib::FbViewMut;
+use applib::Rect;
 
 pub fn html_canvas<'a, F: FbViewMut>(
     uitk_context: &mut UiContext<'a, F>,
@@ -13,7 +13,6 @@ pub fn html_canvas<'a, F: FbViewMut>(
     offsets: &mut (i64, i64),
     dragging: &mut (bool, bool),
 ) -> Option<&'a str> {
-
     uitk_context.dynamic_canvas(dst_rect, &HtmlRenderer { render_list }, offsets, dragging);
 
     let UiContext {
@@ -28,11 +27,7 @@ pub fn html_canvas<'a, F: FbViewMut>(
         return None;
     }
 
-    let (x_p_canvas, y_p_canvas) = (
-        p.x - vr.x0 + ox,
-        p.y - vr.y0 + oy
-    );
-
+    let (x_p_canvas, y_p_canvas) = (p.x - vr.x0 + ox, p.y - vr.y0 + oy);
 
     //
     // Checking for hovered hyperlinks and adding an underline bar to them
@@ -44,14 +39,16 @@ pub fn html_canvas<'a, F: FbViewMut>(
         if let RenderItem::Text { formatted, origin } = render_item {
             if formatted.has_link() {
                 let (x0, y0) = *origin;
-                let text_rect = Rect { x0, y0, w: formatted.w, h: formatted.h };
-                let (x_text, y_text) = (
-                    x_p_canvas - text_rect.x0,
-                    y_p_canvas - text_rect.y0,
-                );
-    
+                let text_rect = Rect {
+                    x0,
+                    y0,
+                    w: formatted.w,
+                    h: formatted.h,
+                };
+                let (x_text, y_text) = (x_p_canvas - text_rect.x0, y_p_canvas - text_rect.y0);
+
                 let index = formatted.xy_to_index((x_text, y_text))?;
-    
+
                 let (link, underlines) = formatted.get_link(index)?;
 
                 for (y_ul, x0_ul, x1_ul) in underlines.iter().cloned() {
@@ -63,7 +60,7 @@ pub fn html_canvas<'a, F: FbViewMut>(
                     fb.fill_line(x0_ul_fb, line_w, y_ul_fb, Color::BLUE, false);
                 }
 
-                return Some(link)
+                return Some(link);
             }
         }
 
@@ -79,35 +76,26 @@ struct HtmlRenderer<'a> {
 
 impl<'a> uitk::TileRenderer for HtmlRenderer<'a> {
     fn shape(&self) -> (u32, u32) {
-
         let Rect { w, h, .. } = get_render_rect(self.render_list.as_ref());
         (w, h)
     }
 
     fn tile_shape(&self) -> (u32, u32) {
         let Rect { w, .. } = get_render_rect(self.render_list.as_ref());
-        (
-            u32::max(w, 300),
-            300
-        )
+        (u32::max(w, 300), 300)
     }
 
     fn content_id(&self, tile_rect: &Rect) -> ContentId {
-
         let layout_rect = get_render_rect(self.render_list.as_ref());
 
         if tile_rect.intersection(&layout_rect).is_none() {
             ContentId::from_hash(&(tile_rect.w, tile_rect.h))
         } else {
-            ContentId::from_hash(&(
-                tile_rect,
-                self.render_list.get_id()
-            ))
+            ContentId::from_hash(&(tile_rect, self.render_list.get_id()))
         }
     }
 
     fn render<F: FbViewMut>(&self, dst_fb: &mut F, tile_rect: &Rect) {
-
         // DEBUG
         // draw_rect_outline(dst_fb, tile_rect, Color::GREEN, false, 1);
 
@@ -115,7 +103,6 @@ impl<'a> uitk::TileRenderer for HtmlRenderer<'a> {
         render_html(dst_fb, self.render_list.as_ref(), tile_rect);
     }
 }
-
 
 fn get_render_rect(render_list: &[RenderItem]) -> Rect {
     let root = render_list.as_ref().last().expect("Empty render list");
