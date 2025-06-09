@@ -29,7 +29,6 @@
 # Meta
 
 * !!! cleanup imports & formatting
-* !!! Build script & instructions
 * !!! Demo videos
 * !!! Icon & wallpaper credits
 * Project icon
