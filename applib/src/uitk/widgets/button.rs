@@ -1,5 +1,5 @@
 use crate::drawing::primitives::{draw_rect, draw_rect_outline};
-use crate::drawing::text::{self, compute_text_bbox, draw_line_in_rect, draw_str, get_font, FontFamily, TextJustification};
+use crate::drawing::text::{compute_text_bbox, draw_str, get_font};
 use crate::uitk::{ContentId, UiContext};
 use crate::{Color, FbView, FbViewMut, Framebuffer, OwnedPixels, Rect, StyleSheet};
 use alloc::borrow::ToOwned;

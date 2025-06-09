@@ -1,5 +1,4 @@
 use crate::Color;
-use alloc::{ffi::CString, string::String};
 
 const FONT_FAMILY_NAME_MAX_LEN: usize = 64;
 

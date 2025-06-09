@@ -1,4 +1,3 @@
-use alloc::format;
 use alloc::vec::Vec;
 use alloc::collections::BTreeMap;
 
@@ -18,7 +17,6 @@ pub use text::{render_rich_text, string_input};
 pub use crate::content::{ContentId, UuidProvider};
 use crate::{InputState, StyleSheet};
 use crate::{FbViewMut, Framebuffer, OwnedPixels};
-use crate::drawing::text::{FontFamily, FONT_FAMILIES};
 
 
 const TILE_CACHE_MAX_SIZE: usize = 20_000_000; // in bytes

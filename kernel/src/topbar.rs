@@ -1,6 +1,6 @@
 use alloc::format;
 use applib::{FbView, OwnedPixels, Framebuffer};
-use applib::drawing::primitives::{draw_rect, draw_rect_outline};
+use applib::drawing::primitives::draw_rect;
 use applib::drawing::text::{compute_text_bbox, draw_line_in_rect, get_font, TextJustification};
 use applib::uitk::{BarValue, HorizBarConfig, UiContext};
 use applib::{Color, Rect};

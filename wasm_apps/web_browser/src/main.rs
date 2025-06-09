@@ -9,10 +9,9 @@ use std::fmt::Debug;
 use alloc::collections::BTreeMap;
 use alloc::format;
 use anyhow::Context;
-use applib::drawing::primitives::draw_rect;
 use html::render_list::RenderItem;
 use lazy_static::lazy_static;
-use applib::{Color, FbViewMut, Rect, StyleSheet};
+use applib::{Rect, StyleSheet};
 use core::cell::OnceCell;
 use guestlib::{PixelData, WasmLogger};
 

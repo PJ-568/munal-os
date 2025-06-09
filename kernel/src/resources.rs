@@ -1,6 +1,4 @@
 use crate::app::AppDescriptor;
-use alloc::borrow::ToOwned;
-use alloc::ffi::CString;
 use applib::{Framebuffer, OwnedPixels, Rect, Color};
 use applib::{StyleSheet, StyleSheetColors, TextSizes, StyleSheetText};
 use lazy_static::lazy_static;

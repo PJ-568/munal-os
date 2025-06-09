@@ -7,7 +7,7 @@ use alloc::vec::Vec;
 use alloc::format;
 use applib::content::TrackedContent;
 use applib::drawing::text::{
-    get_font, FontFamily, RichText
+    get_font, RichText
 };
 use applib::input::Keycode;
 use applib::uitk::{self, UiStore, TextBoxState, EditableRichText};

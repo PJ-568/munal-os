@@ -4,12 +4,11 @@ use applib::uitk::layout::{make_grid_layout, make_horizontal_layout, make_vertic
 use lazy_static::lazy_static;
 
 use applib::drawing::primitives::draw_rect;
-use applib::drawing::text::{draw_line_in_rect, get_font, Font, RichText, TextJustification, FONT_FAMILIES};
+use applib::drawing::text::{draw_line_in_rect, get_font, RichText, TextJustification, FONT_FAMILIES};
 use applib::{Color, StyleSheetText};
 use core::cell::OnceCell;
 use std::vec;
 use guestlib::{PixelData, WasmLogger};
-use applib::Rect;
 use applib::content::TrackedContent;
 use applib::uitk::{self, ButtonConfig, ButtonIndicatorMode, EditableRichText, TextBoxState, UuidProvider};
 use applib::{Framebuffer, OwnedPixels};
@@ -100,7 +99,7 @@ pub fn init() -> () {
         let mut text = RichText::new();
         text.add_part(INTRO_TITLE_TEXT, INTRO_COLOR, font_family.get_size(INTRO_TITLE_SIZE), None);
         text.add_part(INTRO_BODY_TEXT, INTRO_COLOR, font_family.get_size(INTRO_BODY_SIZE), None);
-        for _ in (0..POEM_SPACING) {
+        for _ in 0..POEM_SPACING {
             text.add_part("\n", INTRO_COLOR, font_family.get_size(INTRO_BODY_SIZE), None);
         }
         let poem_font_family = FONT_FAMILIES
