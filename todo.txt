@@ -7,7 +7,6 @@
 
 # Cosmetic
 
-* !!! pick a desktop wallpaper
 * welcome text in web browser
 
 
@@ -29,9 +28,7 @@
 # Meta
 
 * !!! Demo videos
-* !!! Icon & wallpaper credits
 * Project icon
-
 
 
 # Low priority

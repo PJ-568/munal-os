@@ -1,7 +1,6 @@
 # Munal OS ∴
 
 An experimental operating system fully written in Rust, with a unikernel design, cooperative scheduling and a security model based on WASM sandboxing.
-
 ![Screenshot 1](/assets/munal-os-screenshot-1.png)
 ![Screenshot 2](/assets/munal-os-screenshot-2.png)
 ![Screenshot 3](/assets/munal-os-screenshot-3.png)

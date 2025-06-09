@@ -9,7 +9,7 @@ use crate::shell::{pie_menu, PieDrawCalls, PieMenuEntry};
 use crate::stats::SystemStats;
 use applib::content::TrackedContent;
 use applib::drawing::primitives::{draw_rect, draw_rect_outline};
-use applib::drawing::text::{draw_line_in_rect, draw_str, get_font, Font, TextJustification};
+use applib::drawing::text::{compute_text_bbox, draw_line_in_rect, draw_str, get_font, Font, TextJustification};
 use applib::geometry::{Point2D, Vec2D};
 use applib::uitk::{self, GraphSeries, TextBoxState};
 use applib::{input::InputState, Color, FbViewMut, Framebuffer, OwnedPixels, Rect};
@@ -614,7 +614,6 @@ fn app_audit_window<F: FbViewMut>(
     const AUDIT_WIN_W: u32 = 300;
     const MIN_AUDIT_WIN_H: u32 = 100;
     const GAP_H: u32 = 20;
-    const GRAPH_GAP_H: u32 = 3;
 
     const SECTION_TITLE_FONT_SIZE: u32 = 18;
     const SECTION_SUBTITLE_FONT_SIZE: u32 = 12;
@@ -708,31 +707,34 @@ fn app_audit_window<F: FbViewMut>(
     let x = deco.window_rect.x0 + deco.window_rect.w as i64 + 10;
 
     for spec in graph_specs {
-        draw_str(
-            uitk_context.fb,
-            spec.title,
-            x,
-            y,
-            title_font,
-            uitk_context.stylesheet.colors.text,
-            None,
+
+        let (_, title_h) = compute_text_bbox(spec.title, title_font);
+        let title_rect = Rect { x0: x, y0: y, w: AUDIT_WIN_W, h: title_h };
+        draw_rect(
+            uitk_context.fb, &title_rect,
+            uitk_context.stylesheet.colors.element, false
         );
-        y += title_font.char_h as i64;
-
-        draw_str(
-            uitk_context.fb,
-            spec.subtitle,
-            x,
-            y,
-            subtitle_font,
-            uitk_context.stylesheet.colors.text,
-            None,
+        draw_line_in_rect(
+            uitk_context.fb, spec.title, &title_rect, title_font,
+            uitk_context.stylesheet.colors.text, TextJustification::Left
         );
-        y += subtitle_font.char_h as i64;
+        y += title_rect.h as i64;
 
-        y += GRAPH_GAP_H as i64;
+        let (_, subtitle_h) = compute_text_bbox(spec.subtitle, subtitle_font);
 
-        let graph_h = ROW_H - (title_font.char_h + subtitle_font.char_h) as u32 - GRAPH_GAP_H;
+        let subtitle_rect = Rect { x0: x, y0: y, w: AUDIT_WIN_W, h: subtitle_h };
+        draw_rect(
+            uitk_context.fb, &subtitle_rect,
+            uitk_context.stylesheet.colors.element, false
+        );
+        draw_line_in_rect(
+            uitk_context.fb, spec.subtitle, &subtitle_rect, subtitle_font,
+            uitk_context.stylesheet.colors.text, TextJustification::Left
+        );
+
+        y += subtitle_rect.h as i64;
+
+        let graph_h = ROW_H - (title_font.char_h + subtitle_font.char_h) as u32;
 
         let graph_rect = Rect {
             x0: x,
@@ -749,9 +751,11 @@ fn app_audit_window<F: FbViewMut>(
             spec.series,
         );
 
+        let outline_rect = title_rect.bounding_box(&graph_rect);
+
         draw_rect_outline(
             uitk_context.fb,
-            &graph_rect,
+            &outline_rect,
             Color::BLACK,
             false,
             uitk_context.stylesheet.margin,
@@ -761,17 +765,19 @@ fn app_audit_window<F: FbViewMut>(
         y += GAP_H as i64;
     }
 
-    let stylesheet = &uitk_context.stylesheet;
-    draw_str(
-        uitk_context.fb,
-        "Console log",
-        x,
-        y,
-        title_font,
-        stylesheet.colors.text,
-        None,
+    let title = "Console log";
+    let (_, title_h) = compute_text_bbox(title, title_font);
+    let title_rect = Rect { x0: x, y0: y, w: AUDIT_WIN_W, h: title_h };
+    draw_rect(
+        uitk_context.fb, &title_rect,
+        uitk_context.stylesheet.colors.element, false
     );
-    y += title_font.char_h as i64;
+    draw_line_in_rect(
+        uitk_context.fb, title, &title_rect, title_font,
+        uitk_context.stylesheet.colors.text, TextJustification::Left
+    );
+
+    y += title_rect.h as i64;
 
     let [_, _, _, win_y] = deco.window_rect.as_xyxy();
 
@@ -786,9 +792,11 @@ fn app_audit_window<F: FbViewMut>(
         .style(|ss| ss.text.sizes.medium = LOG_FONT_SIZE)
         .text_box(&console_rect, console_log, scrollable_text_state, true);
 
+    let outline_rect = title_rect.bounding_box(&console_rect);
+
     draw_rect_outline(
         uitk_context.fb,
-        &console_rect,
+        &outline_rect,
         Color::BLACK,
         false,
         uitk_context.stylesheet.margin,
