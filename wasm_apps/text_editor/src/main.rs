@@ -27,6 +27,14 @@ const AVAILABLE_TEXT_COLORS: [Color; 10] = [
     Color::ORANGE,
 ];
 
+const INTRO_COLOR: Color = Color::BLACK;
+const INTRO_TITLE_TEXT: &'static str = "Demo text editor\n";
+const INTRO_TITLE_SIZE: u32 = 22;
+const INTRO_BODY_TEXT: &'static str = "You can change text justification, font, size and colors on the right.
+Left/right arrow keys or left click to change the cursor position.
+";
+const INTRO_BODY_SIZE: u32 = 16;
+
 lazy_static! {
     pub static ref JUSTIF_LEFT_ICON: Framebuffer<OwnedPixels> = 
         Framebuffer::from_png(include_bytes!("../icons/justif_left.png"));
@@ -52,7 +60,6 @@ struct AppState {
     bg_color: SingleSelection<Color>,
 
     textbox_text: TrackedContent<RichText>,
-    textbox_prelude: TrackedContent<RichText>,
     textbox_state: TextBoxState,
 }
 
@@ -73,7 +80,7 @@ pub fn init() -> () {
 
     let stylesheet = guestlib::get_stylesheet();
 
-    let justification = SingleSelection(TextJustification::Left);
+    let justification = SingleSelection(TextJustification::Center);
     let font_family_name = SingleSelection(stylesheet.text.font_family().to_owned());
     let font_size = SingleSelection(stylesheet.text.sizes.medium);
     let text_color = SingleSelection(Color::BLACK);
@@ -89,15 +96,17 @@ pub fn init() -> () {
         .get(font_family_name.selected().as_str())
         .expect("Unknown font family");
 
-    let font = font_family.get_size(*font_size.selected());    
-
     let textbox_text = {
-        let text = RichText::from_str("pouet\ntralala", *text_color.selected(), font, None);
-        TrackedContent::new(text, &mut uuid_provider)
-    };
-
-    let textbox_prelude = {
-        let text = RichText::from_str("Write text here >>>", *text_color.selected(), font, None);
+        let mut text = RichText::new();
+        text.add_part(INTRO_TITLE_TEXT, INTRO_COLOR, font_family.get_size(INTRO_TITLE_SIZE), None);
+        text.add_part(INTRO_BODY_TEXT, INTRO_COLOR, font_family.get_size(INTRO_BODY_SIZE), None);
+        for _ in (0..POEM_SPACING) {
+            text.add_part("\n", INTRO_COLOR, font_family.get_size(INTRO_BODY_SIZE), None);
+        }
+        let poem_font_family = FONT_FAMILIES
+            .get(POEM_FONT)
+            .expect("Unknown font family");
+        text.add_part(POEM_TEXT, POEM_COLOR, poem_font_family.get_size(18), None);
         TrackedContent::new(text, &mut uuid_provider)
     };
 
@@ -114,7 +123,6 @@ pub fn init() -> () {
         bg_color,
 
         textbox_text,
-        textbox_prelude,
         textbox_state,
     };
     unsafe {
@@ -383,10 +391,17 @@ pub fn step() {
             rich_text: &mut state.textbox_text
         },
         &mut state.textbox_state,
+        false,
         true,
-        true,
-        Some(&state.textbox_prelude)
+        None::<&EditableRichText>
     );
 
 }
 
+const POEM_TEXT: &'static str = "Across old bark
+It's always dark
+In the ancient glade
+The quiet shade";
+const POEM_COLOR: Color = Color::BLUE;
+const POEM_SPACING: usize = 30;
+const POEM_FONT: &'static str = "XanMono";

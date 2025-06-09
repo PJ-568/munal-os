@@ -134,7 +134,7 @@ lazy_static! {
             init_win_rect: Rect {
                 x0: 400,
                 y0: 300,
-                w: 800,
+                w: 900,
                 h: 600
             },
             icon: &UI_ICON,
