@@ -195,7 +195,7 @@ pub fn init() -> () {
 
         buffer: vec![0u8; BUFFER_SIZE],
         ui_store: uitk::UiStore::new(),
-        uuid_provider: UuidProvider::new(),
+        uuid_provider,
         webview_scroll_offsets: (0, 0),
         webview_scroll_dragging: (false, false),
         request_state: RequestState::Home,
