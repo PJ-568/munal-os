@@ -28,7 +28,6 @@
 
 # Meta
 
-* !!! cleanup imports & formatting
 * !!! Demo videos
 * !!! Icon & wallpaper credits
 * Project icon
