@@ -850,7 +850,22 @@ fn draw_decorations<F: FbViewMut>(
         draw_rect(fb, rect, stylesheet.colors.accent, false);
     }
 
-    draw_rect_outline(fb, &deco.window_rect, Color::BLACK, false, stylesheet.margin);
+
+    //
+    // Drawing black outline
+    // (cannot use draw_rect_outline() because of the resize handle)
+
+    let m = stylesheet.margin as i64;
+
+    let [x1, y1, x2, y2] = deco.window_rect.as_xyxy();
+    let [_, _, right_border_rect, bottom_border_rect] = &deco.border_rects;
+    let [_, _, bx2, _] = bottom_border_rect.as_xyxy();
+    let [_, _, _, ry2] = right_border_rect.as_xyxy();
+
+    draw_rect(fb, &Rect::from_xyxy([x1, y1, x2, y1 + m - 1]), Color::BLACK, false);
+    draw_rect(fb, &Rect::from_xyxy([x1, y2 - m + 1, bx2, y2]), Color::BLACK, false);
+    draw_rect(fb, &Rect::from_xyxy([x1, y1, x1 + m - 1, y2]), Color::BLACK, false);
+    draw_rect(fb, &Rect::from_xyxy([x2 - m + 1, y1, x2, ry2]), Color::BLACK, false);
 }
 
 fn ellipsize_text(txt: &str, font: &Font, max_len: u32) -> String {

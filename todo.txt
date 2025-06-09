@@ -1,7 +1,6 @@
 # Bugs
 
 * !!! crashes on window resizes
-* !!! black border overlaps resize button
 
 * scrollbars interfere with resize button
 * resize handle "jumps" to cursor when resizing
