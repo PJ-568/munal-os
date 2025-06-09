@@ -420,7 +420,6 @@ fn update_request_state(
                     icon: &MF_WEBSITE_ICON
                 },
                 Favorite {
-                    //link: "https://news.ycombinator.com/item?id=43535688",
                     link: "https://news.ycombinator.com",
                     icon: &HN_ICON
                 },

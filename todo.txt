@@ -1,7 +1,5 @@
 # Bugs
 
-* !!! crashes on window resizes
-
 * scrollbars interfere with resize button
 * resize handle "jumps" to cursor when resizing
 * clicks go through scrollbars
@@ -10,7 +8,7 @@
 # Cosmetic
 
 * !!! pick a desktop wallpaper
-* !!! welcome texts in text editor & web browser
+* welcome text in web browser
 
 
 # Refactorings
@@ -31,10 +29,11 @@
 # Meta
 
 * !!! cleanup imports & formatting
-
-* Demo videos
+* !!! Build script & instructions
+* !!! Demo videos
+* !!! Icon & wallpaper credits
 * Project icon
-* Icon credits script + doc
+
 
 
 # Low priority

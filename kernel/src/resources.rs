@@ -93,6 +93,7 @@ lazy_static! {
                 w: 400,
                 h: 400
             },
+            min_size: (200, 200),
             icon: &CUBE_ICON,
         },
         AppDescriptor {
@@ -104,6 +105,7 @@ lazy_static! {
                 w: 250,
                 h: 250
             },
+            min_size: (200, 200),
             icon: &CHRONO_ICON,
         },
         AppDescriptor {
@@ -115,6 +117,7 @@ lazy_static! {
                 w: 600,
                 h: 300
             },
+            min_size: (200, 200),
             icon: &PYTHON_ICON,
         },
         AppDescriptor {
@@ -126,6 +129,7 @@ lazy_static! {
                 w: 800,
                 h: 600
             },
+            min_size: (200, 200),
             icon: &WEB_ICON,
         },
         AppDescriptor {
@@ -137,6 +141,7 @@ lazy_static! {
                 w: 900,
                 h: 600
             },
+            min_size: (200, 400),
             icon: &UI_ICON,
         },
     ];

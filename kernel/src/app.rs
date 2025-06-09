@@ -23,6 +23,7 @@ pub struct AppDescriptor {
     pub data: &'static [u8],
     pub name: &'static str,
     pub init_win_rect: Rect,
+    pub min_size: (u32, u32),
     pub icon: &'static Framebuffer<OwnedPixels>,
 }
 
@@ -143,7 +144,6 @@ pub fn run_apps<F: FbViewMut>(
     input_state: &InputState,
     interaction_state: &mut AppsInteractionState,
 ) {
-    const MIN_APP_SIZE: u32 = 200;
 
     let stylesheet = system.stylesheet.clone();
     let pointer = &input_state.pointer;
@@ -232,9 +232,10 @@ pub fn run_apps<F: FbViewMut>(
 
         AppsInteractionState::ResizeHold { app_name } => {
             let app = apps_manager.get_mut(app_name);
+            let (min_w, min_h) = app.descriptor.min_size;
             let [x1, y1, _, _] = app.rect.as_xyxy();
-            let x2 = i64::max(x1 + MIN_APP_SIZE as i64, pointer.x);
-            let y2 = i64::max(y1 + MIN_APP_SIZE as i64, pointer.y);
+            let x2 = i64::max(x1 + min_w as i64, pointer.x);
+            let y2 = i64::max(y1 + min_h as i64, pointer.y);
             app.rect = Rect::from_xyxy([x1, y1, x2, y2]);
         },
 
