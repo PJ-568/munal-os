@@ -65,6 +65,8 @@ Because of its custom "system call" API, Munal OS does not aim for compatibility
 
 Munal OS relies on cooperative scheduling, meaning that applications are given control of the CPU every iteration of the global event loop, and must explicitly relinquish it. This is less an intentional design decision and more a consequence of using Wasmi as the WASM engine, which does not support interrupting and resuming functions mid-excution. However Wasmi does support fuel limiting, and so in theory it would be possible to terminate misbehaving apps that hold the CPU for too long (though that's not implemented yet).
 
+Each app has a dedicated log stream (akin to stdout in the UNIX world) which can be inspected from the desktop in a dedicated "audit" view. This view also shows how much of the system resources (frametime, memory, resources) are consumed by this app.
+
 ### UI Library
 
 Munal OS has its own UI toolkit (plainly named Uitk) which is used throughout the desktop UI. It is also used by WASM applications, though that's just for convenience and consistency with the desktop styling; it is just a shared library and applications could in theory swap for any other library they wish, as long as it can render to a generic framebuffer.
