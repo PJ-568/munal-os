@@ -1,0 +1,114 @@
+name: Build Munal OS
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_TOOLCHAIN: nightly-2025-06-01-x86_64-unknown-linux-gnu
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: ${{ env.RUST_TOOLCHAIN }}
+        targets: wasm32-wasip1,x86_64-unknown-uefi
+        components: rust-src
+
+    - name: Cache Rust dependencies
+      uses: Swatinem/rust-cache@v2
+
+    - name: Install build dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y python3 qemu-utils dosfstools mtools
+
+    - name: Setup toolchain files
+      run: python3 make.py setup-toolchain
+
+    - name: Build WASM applications
+      run: |
+        for app in chronometer cube_3d terminal web_browser text_editor; do
+          cd wasm_apps/$app
+          cargo build --release --target wasm32-wasip1
+          cd ../..
+        done
+
+    - name: Copy WASM binaries
+      run: |
+        mkdir -p kernel/wasm
+        cp wasm_apps/chronometer/target/wasm32-wasip1/release/chronometer.wasm kernel/wasm/
+        cp wasm_apps/cube_3d/target/wasm32-wasip1/release/cube_3d.wasm kernel/wasm/
+        cp wasm_apps/terminal/target/wasm32-wasip1/release/terminal.wasm kernel/wasm/
+        cp wasm_apps/web_browser/target/wasm32-wasip1/release/web_browser.wasm kernel/wasm/
+        cp wasm_apps/text_editor/target/wasm32-wasip1/release/text_editor.wasm kernel/wasm/
+
+    - name: Build kernel
+      run: |
+        cd kernel
+        cargo build --release --target x86_64-unknown-uefi
+
+    - name: Prepare EFI binary
+      run: |
+        mkdir -p esp/efi/boot/
+        cp kernel/target/x86_64-unknown-uefi/release/kernel.efi esp/efi/boot/bootx64.efi
+    
+    - name: Create qcow2 virtual disk
+      run: |
+        # Create 64MB qcow2 virtual disk
+        qemu-img create -f qcow2 munal-os.qcow2 64M
+        
+        # Map qcow2 to network block device
+        sudo modprobe nbd
+        sudo qemu-nbd --connect=/dev/nbd0 munal-os.qcow2
+        
+        # Create FAT32 partition on virtual disk
+        sudo parted /dev/nbd0 mklabel msdos
+        sudo parted /dev/nbd0 mkpart primary fat32 1MiB 100%
+        
+        # Format partition as FAT32
+        sudo mkfs.fat -F 32 /dev/nbd0p1
+        
+        # Mount partition
+        sudo mkdir -p /mnt/munal-os
+        sudo mount /dev/nbd0p1 /mnt/munal-os
+        
+        # Create EFI boot directory structure
+        sudo mkdir -p /mnt/munal-os/efi/boot
+        
+        # Copy EFI boot files
+        sudo cp esp/efi/boot/bootx64.efi /mnt/munal-os/efi/boot/
+        
+        # Unmount and disconnect network block device
+        sudo umount /mnt/munal-os
+        sudo qemu-nbd --disconnect /dev/nbd0
+        sudo rm -rf /mnt/munal-os
+    
+    - name: Upload qcow2 virtual disk as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: munal-os-qcow2-disk
+        path: munal-os.qcow2
+
+    - name: Upload EFI binary as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: munal-os-efi
+        path: esp/efi/boot/bootx64.efi
+
+    - name: Upload WASM applications as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: munal-os-wasm-apps
+        path: kernel/wasm/*.wasm
